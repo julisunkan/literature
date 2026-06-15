@@ -21,32 +21,62 @@ def generate_review():
     site = get_site_settings()
     db = get_db()
     papers_list = db.execute('SELECT id, title, authors, year, abstract FROM papers ORDER BY created_at DESC').fetchall()
+    uploaded_files = db.execute(
+        'SELECT id, original_name, file_size, created_at FROM paper_files WHERE paper_id IS NULL ORDER BY created_at DESC'
+    ).fetchall()
     db.close()
     return render_template('ai/generate_review.html', site=site, papers=papers_list,
-                           notifications=get_notifications())
+                           uploaded_files=uploaded_files, notifications=get_notifications())
 
 @ai_bp.route('/api/generate-review', methods=['POST'])
 def api_generate_review():
     data = request.get_json()
     topic = data.get('topic', '')
     paper_ids = data.get('paper_ids', [])
+    file_ids = data.get('file_ids', [])
     if not topic:
         return jsonify({'error': 'Topic is required'}), 400
-    if not paper_ids:
-        return jsonify({'error': 'Select at least one paper'}), 400
+    if not paper_ids and not file_ids:
+        return jsonify({'error': 'Select at least one paper or uploaded file'}), 400
     try:
         from services.ai_service import generate_literature_review
         db = get_db()
-        placeholders = ','.join('?' * len(paper_ids))
-        papers = db.execute(f'SELECT * FROM papers WHERE id IN ({placeholders})', paper_ids).fetchall()
-        papers_data = [dict(p) for p in papers]
-        for p in papers_data:
-            pf = db.execute(
-                'SELECT extracted_text, sections FROM paper_files WHERE paper_id=? ORDER BY id DESC LIMIT 1',
-                (p['id'],)
-            ).fetchone()
-            if pf and pf['extracted_text'] and len(pf['extracted_text'].strip()) > 100:
-                p['extracted_text'] = pf['extracted_text']
+        papers_data = []
+
+        if paper_ids:
+            placeholders = ','.join('?' * len(paper_ids))
+            papers = db.execute(f'SELECT * FROM papers WHERE id IN ({placeholders})', paper_ids).fetchall()
+            papers_data = [dict(p) for p in papers]
+            for p in papers_data:
+                pf = db.execute(
+                    'SELECT extracted_text, sections FROM paper_files WHERE paper_id=? ORDER BY id DESC LIMIT 1',
+                    (p['id'],)
+                ).fetchone()
+                if pf and pf['extracted_text'] and len(pf['extracted_text'].strip()) > 100:
+                    p['extracted_text'] = pf['extracted_text']
+
+        if file_ids:
+            fplaceholders = ','.join('?' * len(file_ids))
+            file_rows = db.execute(
+                f'SELECT * FROM paper_files WHERE id IN ({fplaceholders})', file_ids
+            ).fetchall()
+            for fr in file_rows:
+                sections = {}
+                try:
+                    sections = json.loads(fr['sections'] or '{}')
+                except Exception:
+                    pass
+                title = fr['original_name'] or fr['filename'] or f'Uploaded file #{fr["id"]}'
+                abstract = sections.get('abstract', '') or ''
+                papers_data.append({
+                    'id': None,
+                    'title': title,
+                    'authors': '',
+                    'year': None,
+                    'abstract': abstract,
+                    'extracted_text': fr['extracted_text'] or '',
+                })
+
         db.close()
         result = generate_literature_review(topic, papers_data)
         parts = _parse_review_sections(result)

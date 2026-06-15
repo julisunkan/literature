@@ -54,6 +54,35 @@
           {% endif %}
         </div>
 
+        {% if uploaded_files %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Uploaded PDFs
+            <span class="badge bg-secondary ms-1" style="font-size:0.7rem;">{{ uploaded_files|length }}</span>
+          </label>
+          <p class="text-muted small mb-2">Standalone PDFs not linked to a library paper — use their full extracted text directly.</p>
+          <div class="border rounded" style="max-height:200px;overflow-y:auto;">
+            {% for f in uploaded_files %}
+            <label class="d-flex align-items-center p-2 border-bottom" style="cursor:pointer;">
+              <input type="checkbox" class="form-check-input me-2 file-checkbox" value="{{ f.id }}">
+              <div class="flex-grow-1 overflow-hidden">
+                <div class="small fw-semibold text-truncate">{{ f.original_name or f.filename }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">
+                  {{ (f.file_size / 1024)|round(1) }} KB &middot; {{ f.created_at[:10] if f.created_at else '' }}
+                </div>
+              </div>
+              <span class="badge bg-danger-subtle text-danger ms-2 flex-shrink-0" style="font-size:0.68rem;">PDF</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="d-flex gap-2 mt-1">
+            <button class="btn btn-xs btn-outline-secondary" onclick="selectAllFiles()">Select All</button>
+            <button class="btn btn-xs btn-outline-secondary" onclick="selectNoneFiles()">Clear</button>
+            <span class="text-muted small ms-auto" id="selectedFileCount">0 selected</span>
+          </div>
+        </div>
+        {% endif %}
+
         <div class="mb-3">
           <label class="form-label fw-semibold small">Additional AI Tools</label>
           <div class="d-flex flex-wrap gap-2">
@@ -108,6 +137,7 @@ const BUDGET = 22800;
 const AVG_ENTRY_CHARS = 1500;
 
 document.querySelectorAll('.paper-checkbox').forEach(cb => cb.addEventListener('change', updateCount));
+document.querySelectorAll('.file-checkbox').forEach(cb => cb.addEventListener('change', updateFileCount));
 
 function updateCount() {
   const count = document.querySelectorAll('.paper-checkbox:checked').length;
@@ -161,6 +191,13 @@ function clearScoreBadges() {
 
 function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); clearScoreBadges(); updateCount(); }
 function selectNone() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = false; }); clearScoreBadges(); updateCount(); }
+function selectAllFiles() { document.querySelectorAll('.file-checkbox').forEach(cb => { cb.checked = true; }); updateFileCount(); }
+function selectNoneFiles() { document.querySelectorAll('.file-checkbox').forEach(cb => { cb.checked = false; }); updateFileCount(); }
+function updateFileCount() {
+  const count = document.querySelectorAll('.file-checkbox:checked').length;
+  const el = document.getElementById('selectedFileCount');
+  if (el) el.textContent = count + ' selected';
+}
 
 const STOPWORDS = new Set(['the','a','an','and','or','of','in','on','to','for','with','by','is','are',
   'was','were','that','this','it','as','at','be','from','has','have','had','not','but','its',
@@ -301,12 +338,16 @@ function filterPapers(query) {
 function getSelectedIds() {
   return Array.from(document.querySelectorAll('.paper-checkbox:checked')).map(cb => parseInt(cb.value));
 }
+function getSelectedFileIds() {
+  return Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => parseInt(cb.value));
+}
 
 async function generateReview() {
   const topic = document.getElementById('reviewTopic').value.trim();
   const paperIds = getSelectedIds();
+  const fileIds = getSelectedFileIds();
   if (!topic) { showToast('Please enter a research topic', 'warning'); return; }
-  if (paperIds.length === 0) { showToast('Please select at least one paper', 'warning'); return; }
+  if (paperIds.length === 0 && fileIds.length === 0) { showToast('Please select at least one paper or uploaded PDF', 'warning'); return; }
 
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('generateLoading').classList.remove('d-none');
@@ -316,7 +357,7 @@ async function generateReview() {
   try {
     const res = await fetch('/ai/api/generate-review', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({topic, paper_ids: paperIds})
+      body: JSON.stringify({topic, paper_ids: paperIds, file_ids: fileIds})
     });
     const data = await res.json();
     document.getElementById('generateLoading').classList.add('d-none');

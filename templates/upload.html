@@ -45,9 +45,29 @@
             </div>
             <div id="extractedPreviewBody" class="border rounded p-2 bg-light" style="max-height:180px;overflow-y:auto;font-size:0.8rem;white-space:pre-wrap;display:none;"></div>
           </div>
-          <a href="/ai/generate-review" class="btn btn-primary btn-sm w-100">
-            <i class="bi bi-stars me-2"></i>Generate Review from this Paper
-          </a>
+          <div class="border rounded p-3 bg-light mt-2">
+            <p class="small fw-semibold mb-2"><i class="bi bi-stars me-1 text-primary"></i>Generate a review from this PDF</p>
+            <input type="text" class="form-control form-control-sm mb-2" id="quickTopic"
+              placeholder="Enter research topic, e.g. deep learning in NLP">
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary btn-sm flex-grow-1" id="quickGenBtn" onclick="quickGenerate()">
+                <i class="bi bi-stars me-1"></i>Generate Now
+              </button>
+              <a href="/ai/generate-review" class="btn btn-outline-secondary btn-sm">Full Editor</a>
+            </div>
+            <div id="quickGenLoading" class="d-none text-center mt-3">
+              <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+              <span class="small text-muted">Generating review…</span>
+            </div>
+            <div id="quickGenResult" class="d-none mt-3">
+              <div class="alert alert-success py-2 small mb-2">
+                <i class="bi bi-check-circle me-1"></i>Review generated!
+                <a id="quickGenLink" href="#" class="fw-semibold ms-2">View full review →</a>
+              </div>
+              <div id="quickGenPreview" class="border rounded p-2 bg-white" style="max-height:200px;overflow-y:auto;font-size:0.8rem;"></div>
+            </div>
+            <div id="quickGenError" class="d-none mt-2"></div>
+          </div>
         </div>
 
         <div id="uploadError" class="d-none">
@@ -117,6 +137,7 @@ async function uploadFile(file) {
     try {
       const data = JSON.parse(xhr.responseText);
       if (data.success) {
+        currentFileId = data.file_id || null;
         document.getElementById('progressBar').style.width = '100%';
         document.getElementById('uploadStatus').textContent = 'Complete!';
         document.getElementById('uploadResult').classList.remove('d-none');
@@ -157,6 +178,44 @@ async function uploadFile(file) {
 function togglePreview() {
   const body = document.getElementById('extractedPreviewBody');
   body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+let currentFileId = null;
+
+async function quickGenerate() {
+  const topic = document.getElementById('quickTopic').value.trim();
+  if (!topic) { document.getElementById('quickTopic').focus(); showToast('Enter a research topic first', 'warning'); return; }
+  if (!currentFileId) { showToast('No uploaded file available', 'warning'); return; }
+
+  document.getElementById('quickGenBtn').disabled = true;
+  document.getElementById('quickGenLoading').classList.remove('d-none');
+  document.getElementById('quickGenResult').classList.add('d-none');
+  document.getElementById('quickGenError').classList.add('d-none');
+
+  try {
+    const res = await fetch('/ai/api/generate-review', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({topic, paper_ids: [], file_ids: [currentFileId]})
+    });
+    const data = await res.json();
+    document.getElementById('quickGenLoading').classList.add('d-none');
+    if (data.success) {
+      document.getElementById('quickGenResult').classList.remove('d-none');
+      document.getElementById('quickGenLink').href = '/reviews/' + data.review_id;
+      const preview = (data.content || '').slice(0, 600).replace(/\n/g, '<br>').replace(/##\s+([^\n<]+)/g, '<strong>$1</strong>');
+      document.getElementById('quickGenPreview').innerHTML = preview + (data.content.length > 600 ? '<br><em>…</em>' : '');
+      showToast('Review generated!', 'success');
+    } else {
+      document.getElementById('quickGenError').classList.remove('d-none');
+      document.getElementById('quickGenError').innerHTML = `<div class="alert alert-danger py-2 small">${data.error || 'Generation failed'}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('quickGenLoading').classList.add('d-none');
+    document.getElementById('quickGenError').classList.remove('d-none');
+    document.getElementById('quickGenError').innerHTML = `<div class="alert alert-danger py-2 small">Network error: ${e.message}</div>`;
+  }
+  document.getElementById('quickGenBtn').disabled = false;
 }
 
 function showError(msg) {
