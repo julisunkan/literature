@@ -1,0 +1,85 @@
+'use strict';
+
+// Sidebar toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.toggle('mobile-open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+      }
+    });
+    if (localStorage.getItem('sidebar_collapsed') === 'true' && window.innerWidth > 768) {
+      sidebar.classList.add('collapsed');
+    }
+  }
+
+  // Close sidebar on mobile when clicking outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('mobile-open')) {
+      if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
+        sidebar.classList.remove('mobile-open');
+      }
+    }
+  });
+});
+
+// Toast notifications
+function showToast(message, type = 'primary') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const id = 'toast_' + Date.now();
+  const icons = { success: 'check-circle-fill', danger: 'exclamation-triangle-fill', warning: 'exclamation-circle-fill', info: 'info-circle-fill', primary: 'bell-fill' };
+  const icon = icons[type] || icons.primary;
+  const toast = document.createElement('div');
+  toast.id = id;
+  toast.className = `toast align-items-center text-white bg-${type} border-0 show`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `<div class="d-flex"><div class="toast-body"><i class="bi bi-${icon} me-2"></i>${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('${id}').remove()"></button></div>`;
+  container.appendChild(toast);
+  setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 4000);
+}
+
+// Notifications
+async function markNotifsRead() {
+  await fetch('/api/notifications/read', { method: 'POST' });
+  document.querySelectorAll('.badge.rounded-pill.bg-danger').forEach(el => el.remove());
+  document.getElementById('notifDropdown')?.querySelectorAll('.dropdown-item-text').forEach(el => el.remove());
+  showToast('All notifications marked as read', 'info');
+}
+
+// PWA Install
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.remove('d-none');
+});
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.add('d-none');
+  deferredPrompt = null;
+});
+
+async function installPWA() {
+  if (!deferredPrompt) { showToast('App is already installed or not available', 'info'); return; }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') showToast('App installed successfully!', 'success');
+  deferredPrompt = null;
+}
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}

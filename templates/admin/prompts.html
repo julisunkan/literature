@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}Prompt Templates{% endblock %}
+{% block admin_title_h4 %}Prompt Templates{% endblock %}
+
+{% block admin_content %}
+<p class="text-muted mb-4">Edit the AI prompts used for each feature. Use <code>{topic}</code>, <code>{papers}</code>, <code>{abstract}</code>, <code>{context}</code>, <code>{question}</code> as placeholders.</p>
+<div class="accordion" id="promptAccordion">
+  {% for prompt in prompts %}
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#prompt-{{ prompt.id }}">
+        <span class="badge bg-secondary me-2">{{ prompt.type }}</span>
+        <strong>{{ prompt.name.replace('_',' ').title() }}</strong>
+      </button>
+    </h2>
+    <div id="prompt-{{ prompt.id }}" class="accordion-collapse collapse" data-bs-parent="#promptAccordion">
+      <div class="accordion-body">
+        <textarea class="form-control font-monospace small mb-3" id="prompt-content-{{ prompt.id }}" rows="8">{{ prompt.content }}</textarea>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" onclick="savePrompt({{ prompt.id }})"><i class="bi bi-save me-1"></i>Save</button>
+          <span class="text-muted small ms-2">Last updated: {{ prompt.updated_at[:10] if prompt.updated_at else 'Never' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function savePrompt(id) {
+  const content = document.getElementById(`prompt-content-${id}`).value;
+  const res = await fetch(`/julisunkan/api/prompts/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({content})
+  });
+  const data = await res.json();
+  adminToast(data.success ? 'Prompt saved!' : 'Error saving prompt', data.success ? 'success' : 'danger');
+}
+</script>
+{% endblock %}

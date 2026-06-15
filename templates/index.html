@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ site.get('site_name','Literature Review Generator') }} — AI Research Assistant{% endblock %}
+{% block page_title %}Home{% endblock %}
+
+{% block content %}
+<div class="hero-section mb-4">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <h1 class="display-5 fw-bold mb-2">{{ site.get('site_name','Literature Review Generator') }}</h1>
+      <p class="lead text-muted mb-4">{{ site.get('site_tagline','Free AI-powered academic research assistant') }}</p>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="/search" class="btn btn-primary btn-lg"><i class="bi bi-search me-2"></i>Search Papers</a>
+        <a href="/ai/generate-review" class="btn btn-success btn-lg"><i class="bi bi-stars me-2"></i>Generate Review</a>
+        <a href="/upload" class="btn btn-outline-secondary btn-lg"><i class="bi bi-upload me-2"></i>Upload PDF</a>
+      </div>
+    </div>
+    <div class="col-lg-4 text-center d-none d-lg-block">
+      <div class="hero-icon-grid">
+        <i class="bi bi-journals text-primary" style="font-size:4rem;opacity:0.15;"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="stat-icon bg-primary-soft"><i class="bi bi-journals text-primary"></i></div>
+      <div class="stat-value">{{ stats.papers }}</div>
+      <div class="stat-label">Papers Saved</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="stat-icon bg-success-soft"><i class="bi bi-file-earmark-text text-success"></i></div>
+      <div class="stat-value">{{ stats.reviews }}</div>
+      <div class="stat-label">Reviews Generated</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="stat-icon bg-warning-soft"><i class="bi bi-cloud-upload text-warning"></i></div>
+      <div class="stat-value">{{ stats.uploads }}</div>
+      <div class="stat-label">PDFs Processed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Cards -->
+<h5 class="fw-semibold mb-3">What can you do?</h5>
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-search text-primary"></i></div>
+      <h6 class="fw-semibold">Multi-source Search</h6>
+      <p class="text-muted small mb-2">Search OpenAlex, Semantic Scholar, Crossref, PubMed, and arXiv simultaneously.</p>
+      <a href="/search" class="btn btn-sm btn-outline-primary">Search Now</a>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-stars text-success"></i></div>
+      <h6 class="fw-semibold">AI Literature Review</h6>
+      <p class="text-muted small mb-2">Generate structured academic reviews with intro, themes, gaps, and conclusions.</p>
+      <a href="/ai/generate-review" class="btn btn-sm btn-outline-success">Generate</a>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-cloud-upload text-warning"></i></div>
+      <h6 class="fw-semibold">PDF Processing</h6>
+      <p class="text-muted small mb-2">Upload papers, extract text, detect sections, and enable AI analysis.</p>
+      <a href="/upload" class="btn btn-sm btn-outline-warning">Upload PDF</a>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-chat-dots text-info"></i></div>
+      <h6 class="fw-semibold">AI Chat with Papers</h6>
+      <p class="text-muted small mb-2">Ask questions about your saved papers and get AI-powered answers.</p>
+      <a href="/ai/chat" class="btn btn-sm btn-outline-info">Chat Now</a>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-bar-chart-line text-danger"></i></div>
+      <h6 class="fw-semibold">Visualizations</h6>
+      <p class="text-muted small mb-2">Publication timelines, keyword trends, citation distributions, and more.</p>
+      <a href="/visualizations" class="btn btn-sm btn-outline-danger">View Charts</a>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-funnel text-secondary"></i></div>
+      <h6 class="fw-semibold">PRISMA Workflow</h6>
+      <p class="text-muted small mb-2">Systematic review with identification, screening, eligibility, and inclusion steps.</p>
+      <a href="/prisma" class="btn btn-sm btn-outline-secondary">Start PRISMA</a>
+    </div>
+  </div>
+</div>
+
+{% if recent_reviews %}
+<h5 class="fw-semibold mb-3">Recent Reviews</h5>
+<div class="row g-3">
+  {% for review in recent_reviews %}
+  <div class="col-md-6">
+    <div class="card card-hover">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h6 class="fw-semibold mb-1">{{ review.title }}</h6>
+            <p class="text-muted small mb-0">{{ review.created_at[:10] }}</p>
+          </div>
+          <span class="badge bg-{{ 'success' if review.status == 'completed' else 'secondary' }}">{{ review.status }}</span>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent">
+        <a href="/reviews/{{ review.id }}" class="btn btn-sm btn-outline-primary">View Review</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

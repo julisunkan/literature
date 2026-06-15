@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}System Logs{% endblock %}
+{% block admin_title_h4 %}System Logs{% endblock %}
+
+{% block admin_content %}
+<ul class="nav nav-tabs mb-4" id="logTabs">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#system">System Logs</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#audit">Audit Logs</a></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="system">
+    <div class="card mb-3">
+      <div class="card-body pb-2">
+        <form method="GET" class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small">Level</label>
+            <select class="form-select form-select-sm" name="level">
+              <option value="" {% if not level %}selected{% endif %}>All Levels</option>
+              <option value="INFO" {% if level=='INFO' %}selected{% endif %}>INFO</option>
+              <option value="WARNING" {% if level=='WARNING' %}selected{% endif %}>WARNING</option>
+              <option value="ERROR" {% if level=='ERROR' %}selected{% endif %}>ERROR</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Source</label>
+            <input type="text" class="form-control form-control-sm" name="source" value="{{ source }}" placeholder="e.g. ai:groq">
+          </div>
+          <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
+          <div class="col-auto"><a href="/julisunkan/logs" class="btn btn-sm btn-outline-secondary">Reset</a></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Time</th><th>Level</th><th>Source</th><th>Message</th></tr>
+          </thead>
+          <tbody>
+            {% for log in system_logs %}
+            <tr>
+              <td class="text-muted small">{{ log.created_at[5:16] }}</td>
+              <td><span class="badge bg-{% if log.level=='ERROR' %}danger{% elif log.level=='WARNING' %}warning text-dark{% else %}secondary{% endif %}">{{ log.level }}</span></td>
+              <td class="small text-muted">{{ log.source }}</td>
+              <td class="small">{{ log.message[:120] }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No logs</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="audit">
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>Time</th><th>Action</th><th>Entity</th><th>IP</th></tr>
+          </thead>
+          <tbody>
+            {% for log in audit_logs %}
+            <tr>
+              <td class="text-muted small">{{ log.created_at[5:16] }}</td>
+              <td class="small"><span class="badge bg-info text-dark">{{ log.admin_action }}</span></td>
+              <td class="small text-muted">{{ log.entity_type }}: {{ log.entity_id }}</td>
+              <td class="small text-muted">{{ log.ip_address }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No audit logs</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

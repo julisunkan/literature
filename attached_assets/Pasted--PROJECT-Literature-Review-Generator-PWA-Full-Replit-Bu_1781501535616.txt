@@ -1,0 +1,561 @@
+# PROJECT: Literature Review Generator (PWA) — Full Replit Build Prompt
+
+Build a **production-ready Progressive Web App (PWA)** called:
+
+> **Literature Review Generator**
+
+A free, AI-powered academic research assistant for generating literature reviews, analyzing papers, detecting research gaps, and managing research workflows.
+
+The app must use:
+
+* Python Flask
+* SQLite database
+* Free academic APIs
+* Groq AI (primary)
+* PWA support (installable + offline mode)
+
+---
+
+# CORE REQUIREMENTS
+
+## PUBLIC ACCESS SYSTEM (NO LOGIN)
+
+DO NOT implement:
+
+* User registration
+* User login
+* Authentication system
+* Passwords
+* User profiles
+* Roles or permissions
+* Subscription or payment system
+
+All features must be publicly accessible to anyone using the app.
+
+---
+
+# MAIN APPLICATION FEATURES
+
+## 1. Paper Discovery System
+
+Integrate free academic APIs:
+
+* OpenAlex
+* Semantic Scholar
+* Crossref
+* PubMed
+* arXiv
+
+Users can:
+
+* Search academic papers
+* Filter by year, author, citations
+* View abstracts, metadata, DOI
+
+Store results in SQLite.
+
+---
+
+## 2. PDF UPLOAD SYSTEM
+
+Users can upload:
+
+* Research papers
+* Theses
+* Reports
+
+Features:
+
+* Extract text from PDFs
+* OCR scanned documents
+* Detect sections (abstract, method, results)
+* Store processed text in SQLite
+
+---
+
+## 3. AI FEATURES (GROQ PRIMARY)
+
+Use Groq API as the primary AI provider:
+
+* Llama 3 / DeepSeek models
+
+Fallback options:
+
+* Ollama (local)
+* OpenRouter
+* Gemini
+
+Admin can switch providers from dashboard.
+
+---
+
+## AI CAPABILITIES
+
+### Literature Review Generator
+
+Generate structured academic review:
+
+* Introduction
+* Thematic analysis
+* Research gaps
+* Future directions
+* Conclusion
+
+---
+
+### Abstract Summarizer
+
+Extract:
+
+* Objective
+* Methodology
+* Findings
+* Limitations
+
+---
+
+### Research Question Generator
+
+Generate:
+
+* Main research question
+* Sub-questions
+* Hypotheses
+
+---
+
+### Research Gap Detection
+
+Identify:
+
+* Underexplored areas
+* Contradictions
+* Geographic gaps
+* Method gaps
+
+---
+
+### Thematic Analysis
+
+Cluster papers into themes.
+
+---
+
+### Contradiction Detection
+
+Find conflicting results across studies.
+
+---
+
+### Methodology Extraction
+
+Extract:
+
+* Sample size
+* Research design
+* Data methods
+
+---
+
+### AI Chat (RAG)
+
+Users can chat with:
+
+* Papers
+* PDFs
+* Entire project
+
+Use FAISS + embeddings.
+
+---
+
+## 4. CITATION SYSTEM
+
+Support:
+
+* APA 7
+* MLA
+* Chicago
+* Harvard
+* IEEE
+
+Generate:
+
+* In-text citations
+* Bibliographies
+* References list
+
+Export:
+
+* BibTeX
+* RIS
+
+---
+
+## 5. LITERATURE MATRIX
+
+Generate structured table:
+
+* Author
+* Year
+* Method
+* Findings
+* Limitations
+
+Export to Excel/CSV.
+
+---
+
+## 6. VISUALIZATION SYSTEM
+
+Use Chart.js to display:
+
+* Publication timeline
+* Keyword trends
+* Citation distribution
+* Research themes
+* Evidence strength
+
+---
+
+## 7. KNOWLEDGE GRAPH
+
+Visualize relationships between:
+
+* Papers
+* Authors
+* Concepts
+* Keywords
+
+---
+
+## 8. SYSTEMATIC REVIEW MODE (PRISMA)
+
+Implement PRISMA workflow:
+
+* Identification
+* Screening
+* Eligibility
+* Inclusion
+
+Generate PRISMA diagram.
+
+---
+
+## 9. EXPORT SYSTEM
+
+Export formats:
+
+* PDF
+* DOCX
+* Markdown
+* HTML
+* CSV
+* Excel
+* BibTeX
+* RIS
+
+---
+
+## 10. NOTES SYSTEM
+
+Users can:
+
+* Save notes per paper
+* Add tags
+* Edit/delete notes
+
+Markdown supported.
+
+---
+
+## 11. NOTIFICATIONS
+
+System notifications:
+
+* Review completed
+* Export ready
+* Upload processed
+* System alerts
+
+---
+
+# PWA REQUIREMENTS
+
+The app must be installable and work offline.
+
+## Manifest.json
+
+* App name: Literature Review Generator
+* Short name: LitReview
+* Theme color configurable
+* Icons included
+
+---
+
+## Service Worker
+
+Must cache:
+
+* Homepage
+* Dashboard
+* Saved reviews
+* Static assets
+* Recently viewed papers
+
+---
+
+## Offline Mode
+
+Users can:
+
+* View saved reviews
+* Access cached papers
+* View notes
+
+---
+
+# ADMIN DASHBOARD
+
+## IMPORTANT:
+
+Admin dashboard must be accessible at:
+
+> `/julisunkan`
+
+NO password required.
+
+NO login required.
+
+NO authentication system.
+
+Visiting `/julisunkan` directly opens admin panel.
+
+---
+
+# ADMIN FEATURES
+
+## 1. Analytics Dashboard
+
+Display:
+
+* Total papers searched
+* Total reviews generated
+* Total PDF uploads
+* AI requests usage
+* System health
+
+---
+
+## 2. SITE SETTINGS
+
+Admin can edit:
+
+* Site name
+* Logo
+* Favicon
+* Footer text
+* Homepage content
+* About page
+* Contact email
+* Privacy policy
+* Terms
+
+Stored in SQLite.
+
+---
+
+## 3. API MANAGEMENT
+
+Manage API keys:
+
+* Groq API
+* Ollama URL
+* OpenRouter API
+* Gemini API
+* OpenAlex
+* Semantic Scholar
+* Crossref
+* PubMed
+* arXiv
+
+Features:
+
+* Add / edit / delete APIs
+* Enable / disable APIs
+* Test connection
+
+---
+
+## 4. AI PROVIDER MANAGEMENT
+
+Configure:
+
+* Default provider (Groq)
+* Fallback order
+* Model selection
+
+---
+
+## 5. PROMPT MANAGEMENT
+
+Admin can edit AI prompts for:
+
+* Literature reviews
+* Summarization
+* Gap analysis
+* Chat responses
+* Method extraction
+
+---
+
+## 6. FEATURE TOGGLES
+
+Enable/disable:
+
+* PDF upload
+* AI chat
+* PRISMA mode
+* Knowledge graph
+* Export formats
+
+---
+
+## 7. PWA SETTINGS
+
+Configure:
+
+* App name
+* Theme color
+* Offline mode
+* Install prompt
+
+---
+
+## 8. BACKUP SYSTEM
+
+Allow:
+
+* SQLite backup download
+* Restore backup
+* Delete backups
+
+Includes:
+
+* Database
+* Uploaded files
+* Generated reviews
+
+---
+
+## 9. SYSTEM LOGS
+
+Track:
+
+* Errors
+* API failures
+* AI requests
+* Uploads
+* Exports
+
+---
+
+## 10. AUDIT LOGS
+
+Track admin actions:
+
+* API changes
+* Settings updates
+* Prompt edits
+* Feature toggles
+
+---
+
+# DATABASE (SQLITE)
+
+Required tables:
+
+* papers
+* paper_files
+* paper_notes
+* literature_reviews
+* review_versions
+* citations
+* themes
+* research_gaps
+* chat_sessions
+* chat_messages
+* notifications
+* api_settings
+* ai_models
+* prompt_templates
+* feature_toggles
+* site_settings
+* email_settings
+* activity_logs
+* audit_logs
+* system_logs
+* exports
+* uploads
+* backups
+* pwa_settings
+
+---
+
+# SECURITY NOTES
+
+Even though there is no login system:
+
+* Validate all inputs
+* Sanitize file uploads
+* Limit file sizes
+* Rate limit API requests
+* Prevent XSS/SQL injection
+* Never expose API keys in frontend
+
+---
+
+# UI REQUIREMENTS
+
+* Bootstrap 5 responsive design
+* Clean academic UI
+* Sidebar navigation
+* Dashboard cards
+* Loading indicators
+* Toast notifications
+* Mobile-first design
+
+---
+
+# CODE STRUCTURE
+
+Must include:
+
+* Flask Blueprints
+* Services layer (AI, search, PDF, export)
+* Utility helpers
+* Config file
+* Environment variables support
+* Modular architecture
+
+---
+
+# OUTPUT EXPECTATION
+
+Generate a complete working Flask project including:
+
+* app.py
+* database models
+* routes
+* templates
+* static files
+* service worker
+* manifest.json
+* AI integration layer
+* admin dashboard
+* PWA configuration
+* requirements.txt
+* installation instructions
+* Replit-ready setup
+
+The final app must run immediately on Replit with minimal configuration.

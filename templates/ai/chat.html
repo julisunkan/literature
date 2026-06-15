@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}AI Chat — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}AI Chat{% endblock %}
+
+{% block content %}
+<div class="row g-3" style="height:calc(100vh - 130px);">
+  <!-- Sidebar: sessions & paper selection -->
+  <div class="col-lg-3 d-flex flex-column">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold small">Context Papers</h6>
+        <span class="badge bg-primary" id="contextCount">0</span>
+      </div>
+      <div class="card-body p-2" style="max-height:200px;overflow-y:auto;">
+        {% if papers %}
+          {% for paper in papers %}
+          <label class="d-flex align-items-center gap-2 py-1 px-1 rounded" style="cursor:pointer;font-size:0.78rem;">
+            <input type="checkbox" class="paper-ctx-cb" value="{{ paper.id }}" onchange="updateContextCount()">
+            <span class="text-truncate">{{ paper.title[:40] }}</span>
+          </label>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted small text-center mb-0 py-2">No papers saved. <a href="/search">Search</a></p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm flex-grow-1">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold small">Chat History</h6>
+        <button class="btn btn-xs btn-outline-primary" onclick="newChat()"><i class="bi bi-plus"></i></button>
+      </div>
+      <div class="list-group list-group-flush" style="overflow-y:auto;max-height:300px;" id="sessionList">
+        {% for session in sessions %}
+        <button class="list-group-item list-group-item-action py-2 text-start border-0 small"
+                onclick="loadSession({{ session.id }})">
+          <div class="text-truncate fw-semibold">{{ session.title }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">{{ session.updated_at[:10] }}</div>
+        </button>
+        {% else %}
+        <div class="list-group-item text-muted small text-center py-3">No chat sessions yet</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat window -->
+  <div class="col-lg-9 d-flex flex-column">
+    <div class="card shadow-sm flex-grow-1 d-flex flex-column">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-chat-dots text-primary"></i>
+        <h6 class="mb-0 fw-semibold">Chat with Your Papers</h6>
+        <span class="ms-auto text-muted small" id="sessionLabel">New conversation</span>
+      </div>
+
+      <div class="flex-grow-1 p-3 overflow-auto" id="chatMessages" style="min-height:300px;max-height:calc(100vh - 300px);">
+        <div class="text-center text-muted py-4" id="welcomeMsg">
+          <i class="bi bi-chat-dots display-3 opacity-15"></i>
+          <p class="mt-3">Ask anything about your research papers.</p>
+          <p class="small">Select papers above to give the AI context, or ask general research questions.</p>
+          <div class="row g-2 mt-3">
+            {% for q in ['Summarize the key findings across these papers', 'What are the main research gaps?', 'Compare the methodologies used', 'What future directions are suggested?'] %}
+            <div class="col-12"><button class="btn btn-outline-secondary btn-sm w-100" onclick="askSuggested('{{ q }}')">{{ q }}</button></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer bg-white">
+        <div class="d-flex gap-2">
+          <textarea class="form-control" id="chatInput" rows="2" placeholder="Ask a question about your papers..." onkeydown="handleKey(event)" style="resize:none;"></textarea>
+          <button class="btn btn-primary px-3" id="sendBtn" onclick="sendMessage()">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentSessionId = null;
+
+function updateContextCount() {
+  const count = document.querySelectorAll('.paper-ctx-cb:checked').length;
+  document.getElementById('contextCount').textContent = count;
+}
+
+function getContextPapers() {
+  return Array.from(document.querySelectorAll('.paper-ctx-cb:checked')).map(cb => parseInt(cb.value));
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function newChat() {
+  currentSessionId = null;
+  document.getElementById('chatMessages').innerHTML = document.getElementById('welcomeMsg')?.outerHTML || '';
+  document.getElementById('sessionLabel').textContent = 'New conversation';
+}
+
+async function loadSession(sessionId) {
+  currentSessionId = sessionId;
+  document.getElementById('sessionLabel').textContent = 'Loading...';
+  // For simplicity, start a fresh view with session id set
+  document.getElementById('chatMessages').innerHTML = '<div class="text-center text-muted py-3 small">Session loaded. Continue the conversation.</div>';
+  document.getElementById('sessionLabel').textContent = 'Session #' + sessionId;
+}
+
+function askSuggested(question) {
+  document.getElementById('chatInput').value = question;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+
+  // Hide welcome message
+  const welcome = document.getElementById('welcomeMsg');
+  if (welcome) welcome.remove();
+
+  appendMessage('user', question);
+  appendMessage('assistant', null, true);
+
+  try {
+    const res = await fetch('/ai/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ question, session_id: currentSessionId, paper_ids: getContextPapers() })
+    });
+    const data = await res.json();
+    removeTypingIndicator();
+    if (data.success) {
+      currentSessionId = data.session_id;
+      document.getElementById('sessionLabel').textContent = 'Session #' + data.session_id;
+      appendMessage('assistant', data.answer);
+    } else {
+      appendMessage('assistant', '**Error:** ' + (data.error || 'Unknown error'));
+    }
+  } catch(e) {
+    removeTypingIndicator();
+    appendMessage('assistant', 'Network error: ' + e.message);
+  }
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function appendMessage(role, content, typing = false) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `d-flex mb-3 ${role === 'user' ? 'justify-content-end' : ''}`;
+  if (typing) {
+    div.id = 'typingIndicator';
+    div.innerHTML = `<div class="chat-bubble assistant"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  } else {
+    const text = (content || '').replace(/\n/g, '<br>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    div.innerHTML = `<div class="chat-bubble ${role}">${text}</div>`;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+</script>
+{% endblock %}

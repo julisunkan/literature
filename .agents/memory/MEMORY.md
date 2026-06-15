@@ -1,0 +1,1 @@
+- [LitReview Project Structure](litreview-structure.md) — Flask PWA with blueprints, SQLite, Groq AI, 5 academic APIs; admin at /julisunkan (no auth)

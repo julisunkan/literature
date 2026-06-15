@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}Feature Toggles{% endblock %}
+{% block admin_title_h4 %}Feature Toggles{% endblock %}
+
+{% block admin_content %}
+<p class="text-muted mb-4">Enable or disable features for all users.</p>
+<div class="card shadow-sm">
+  <div class="list-group list-group-flush">
+    {% for feature in features %}
+    <div class="list-group-item">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold text-capitalize">{{ feature.feature_name.replace('_',' ').title() }}</div>
+          <div class="text-muted small">{{ feature.description }}</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 id="feature-{{ feature.id }}" {% if feature.is_enabled %}checked{% endif %}
+                 onchange="toggleFeature({{ feature.id }}, this.checked)">
+          <label class="form-check-label small" for="feature-{{ feature.id }}">
+            <span class="badge bg-{% if feature.is_enabled %}success{% else %}secondary{% endif %}" id="badge-{{ feature.id }}">
+              {{ 'Enabled' if feature.is_enabled else 'Disabled' }}
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleFeature(id, enabled) {
+  const res = await fetch(`/julisunkan/api/features/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enabled})
+  });
+  const data = await res.json();
+  if (data.success) {
+    const badge = document.getElementById(`badge-${id}`);
+    badge.textContent = enabled ? 'Enabled' : 'Disabled';
+    badge.className = `badge bg-${enabled ? 'success' : 'secondary'}`;
+    adminToast(`Feature ${enabled ? 'enabled' : 'disabled'}!`);
+  }
+}
+</script>
+{% endblock %}

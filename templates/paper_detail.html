@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title[:60] }} — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}Paper Detail{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h4 class="fw-bold mb-2">{{ paper.title }}</h4>
+            <div class="d-flex flex-wrap gap-2 small text-muted">
+              {% if paper.authors %}<span><i class="bi bi-person me-1"></i>{{ paper.authors }}</span>{% endif %}
+              {% if paper.year %}<span class="badge bg-light text-dark border">{{ paper.year }}</span>{% endif %}
+              {% if paper.journal %}<span><i class="bi bi-journal me-1"></i>{{ paper.journal }}</span>{% endif %}
+              {% if paper.citations_count %}<span><i class="bi bi-quote me-1"></i>{{ paper.citations_count }} citations</span>{% endif %}
+              <span class="badge bg-secondary">{{ paper.source }}</span>
+            </div>
+          </div>
+        </div>
+        {% if paper.doi %}
+        <p class="small text-muted mb-2"><i class="bi bi-link-45deg me-1"></i>DOI: <a href="https://doi.org/{{ paper.doi }}" target="_blank">{{ paper.doi }}</a></p>
+        {% endif %}
+        {% if paper.url %}
+        <p class="small text-muted mb-2"><i class="bi bi-box-arrow-up-right me-1"></i><a href="{{ paper.url }}" target="_blank">View Source</a></p>
+        {% endif %}
+        {% if paper.keywords %}
+        <div class="mb-3">
+          {% for kw in paper.keywords.split(',')[:8] %}
+          <span class="badge bg-light text-dark border me-1">{{ kw.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if paper.abstract %}
+        <h6 class="fw-semibold mt-3">Abstract</h6>
+        <p class="text-muted">{{ paper.abstract }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- AI Actions -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-stars me-2"></i>AI Analysis</h6></div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button class="btn btn-sm btn-primary" onclick="summarizeThis()"><i class="bi bi-stars me-1"></i>Summarize Abstract</button>
+          <button class="btn btn-sm btn-outline-info" onclick="extractMethodology()"><i class="bi bi-diagram-2 me-1"></i>Extract Methodology</button>
+          <button class="btn btn-sm btn-outline-success" onclick="generateQuestions()"><i class="bi bi-question-circle me-1"></i>Research Questions</button>
+        </div>
+        <div id="aiResult" class="d-none">
+          <div id="aiLoading" class="text-center py-3 d-none"><div class="spinner-border text-primary spinner-border-sm"></div> <span class="ms-2 text-muted">Analyzing...</span></div>
+          <div id="aiContent" class="ai-response p-3 bg-light rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files -->
+    {% if files %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-file-pdf me-2"></i>Uploaded Files</h6></div>
+      <div class="list-group list-group-flush">
+        {% for f in files %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ f.original_name }}</div>
+          <div class="d-flex gap-2 align-items-center">
+            {% if f.ocr_used %}<span class="badge bg-info">OCR</span>{% endif %}
+            <span class="text-muted small">{{ (f.file_size / 1024)|int }} KB</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Citations -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-quote me-2"></i>Generate Citation</h6></div>
+      <div class="card-body">
+        <select class="form-select form-select-sm mb-2" id="citationStyle">
+          <option value="apa">APA 7th</option>
+          <option value="mla">MLA</option>
+          <option value="chicago">Chicago</option>
+          <option value="harvard">Harvard</option>
+          <option value="ieee">IEEE</option>
+        </select>
+        <button class="btn btn-sm btn-primary w-100 mb-2" onclick="generateCitation()">Generate Citation</button>
+        <div id="citationResult" class="d-none">
+          <div class="bg-light p-2 rounded mb-2">
+            <p class="small mb-1 fw-semibold">Full Citation:</p>
+            <p class="small mb-0" id="citationText"></p>
+          </div>
+          <div class="bg-light p-2 rounded mb-2">
+            <p class="small mb-1 fw-semibold">In-text:</p>
+            <code class="small" id="inTextCitation"></code>
+          </div>
+          <div class="d-flex gap-1">
+            <button class="btn btn-xs btn-outline-secondary" onclick="copyText('citationText')"><i class="bi bi-copy"></i> Copy</button>
+            <a href="/export/citations/bibtex?ids={{ paper.id }}" class="btn btn-xs btn-outline-secondary">BibTeX</a>
+            <a href="/export/citations/ris?ids={{ paper.id }}" class="btn btn-xs btn-outline-secondary">RIS</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-sticky me-2"></i>Notes</h6>
+        <button class="btn btn-sm btn-outline-primary" onclick="toggleNoteForm()"><i class="bi bi-plus"></i></button>
+      </div>
+      <div class="card-body">
+        <div id="noteForm" class="d-none mb-3">
+          <textarea class="form-control form-control-sm mb-2" id="noteContent" rows="4" placeholder="Write your note (markdown supported)..."></textarea>
+          <input type="text" class="form-control form-control-sm mb-2" id="noteTags" placeholder="Tags (comma-separated)">
+          <button class="btn btn-sm btn-primary" onclick="saveNote()">Save Note</button>
+        </div>
+        <div id="notesList">
+          {% for note in notes %}
+          <div class="border rounded p-2 mb-2 note-item" id="note-{{ note.id }}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="small flex-grow-1">{{ note.content }}</div>
+              <button class="btn btn-xs btn-outline-danger ms-2" onclick="deleteNote({{ note.id }})"><i class="bi bi-trash"></i></button>
+            </div>
+            {% if note.tags %}
+            <div class="mt-1">{% for tag in note.tags.split(',') %}<span class="badge bg-secondary me-1" style="font-size:0.65rem;">{{ tag.strip() }}</span>{% endfor %}</div>
+            {% endif %}
+            <div class="text-muted" style="font-size:0.7rem;">{{ note.created_at[:10] }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted small text-center" id="noNotesMsg">No notes yet</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const paperId = {{ paper.id }};
+
+async function summarizeThis() {
+  const abstract = {{ (paper.abstract or '') | tojson }};
+  showAiResult();
+  try {
+    const res = await fetch('/ai/api/summarize', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({abstract, paper_id: paperId})});
+    const data = await res.json();
+    showAiContent(data.summary || data.error);
+  } catch(e) { showAiContent('Error: ' + e.message); }
+}
+
+async function extractMethodology() {
+  showAiResult();
+  try {
+    const res = await fetch('/ai/api/methodology', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({paper_id: paperId})});
+    const data = await res.json();
+    showAiContent(data.methodology || data.error);
+  } catch(e) { showAiContent('Error: ' + e.message); }
+}
+
+async function generateQuestions() {
+  const title = {{ paper.title | tojson }};
+  showAiResult();
+  try {
+    const res = await fetch('/ai/api/research-questions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({topic: title, context: {{ (paper.abstract or '') | tojson }}})});
+    const data = await res.json();
+    showAiContent(data.questions || data.error);
+  } catch(e) { showAiContent('Error: ' + e.message); }
+}
+
+function showAiResult() {
+  document.getElementById('aiResult').classList.remove('d-none');
+  document.getElementById('aiLoading').classList.remove('d-none');
+  document.getElementById('aiContent').textContent = '';
+}
+
+function showAiContent(text) {
+  document.getElementById('aiLoading').classList.add('d-none');
+  document.getElementById('aiContent').innerHTML = (text || 'No result').replace(/\n/g,'<br>');
+}
+
+async function generateCitation() {
+  const style = document.getElementById('citationStyle').value;
+  const res = await fetch(`/export/api/citation/${paperId}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({style})});
+  const data = await res.json();
+  if (data.citation) {
+    document.getElementById('citationResult').classList.remove('d-none');
+    document.getElementById('citationText').textContent = data.citation;
+    document.getElementById('inTextCitation').textContent = data.in_text;
+  }
+}
+
+function copyText(id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent);
+  showToast('Copied!', 'success');
+}
+
+function toggleNoteForm() {
+  document.getElementById('noteForm').classList.toggle('d-none');
+}
+
+async function saveNote() {
+  const content = document.getElementById('noteContent').value.trim();
+  const tags = document.getElementById('noteTags').value.trim();
+  if (!content) return;
+  const res = await fetch(`/api/papers/${paperId}/note`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({content, tags})});
+  const data = await res.json();
+  if (data.success) { showToast('Note saved!', 'success'); setTimeout(() => location.reload(), 500); }
+}
+
+async function deleteNote(noteId) {
+  if (!confirm('Delete this note?')) return;
+  const res = await fetch(`/api/papers/${paperId}/note/${noteId}`, {method:'DELETE'});
+  const data = await res.json();
+  if (data.success) { document.getElementById(`note-${noteId}`).remove(); showToast('Note deleted', 'info'); }
+}
+</script>
+{% endblock %}

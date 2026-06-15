@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Generate Review — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}Generate Literature Review{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-5">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-stars me-2"></i>Generate Literature Review</h6></div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Research Topic <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="reviewTopic" placeholder="e.g., Deep learning in medical image segmentation">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Select Papers <span class="text-danger">*</span></label>
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" class="form-control" id="paperSearch" placeholder="Filter papers..." oninput="filterPapers(this.value)">
+          </div>
+          {% if papers %}
+          <div id="paperList" style="max-height:300px;overflow-y:auto;" class="border rounded">
+            {% for paper in papers %}
+            <label class="d-flex align-items-start p-2 border-bottom cursor-pointer paper-item" style="cursor:pointer;">
+              <input type="checkbox" class="form-check-input mt-1 me-2 paper-checkbox" value="{{ paper.id }}" id="paper-{{ paper.id }}">
+              <div class="flex-grow-1">
+                <div class="small fw-semibold">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
+                <div class="text-muted" style="font-size:0.75rem;">{{ paper.authors[:40] if paper.authors else '' }} {% if paper.year %}({{ paper.year }}){% endif %}</div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-xs btn-outline-secondary" onclick="selectAll()">Select All</button>
+            <button class="btn btn-xs btn-outline-secondary" onclick="selectNone()">Clear</button>
+            <span class="text-muted small ms-auto" id="selectedCount">0 selected</span>
+          </div>
+          {% else %}
+          <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-1"></i>No papers in library.
+            <a href="/search">Search and save papers</a> first.
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Additional AI Tools</label>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-info" onclick="runGapAnalysis()"><i class="bi bi-search me-1"></i>Gap Analysis</button>
+            <button class="btn btn-sm btn-outline-warning" onclick="runThematic()"><i class="bi bi-diagram-3 me-1"></i>Thematic Analysis</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="runContradictions()"><i class="bi bi-arrow-left-right me-1"></i>Contradictions</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="runResearchQ()"><i class="bi bi-question-circle me-1"></i>Research Questions</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary w-100" id="generateBtn" onclick="generateReview()">
+          <i class="bi bi-stars me-2"></i>Generate Literature Review
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm" id="resultCard" style="min-height:400px;">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-file-earmark-text me-2"></i>Generated Review</h6>
+        <div class="d-flex gap-2" id="exportButtons" style="display:none!important;">
+          <a id="exportMd" href="#" class="btn btn-xs btn-outline-secondary"><i class="bi bi-markdown"></i> MD</a>
+          <a id="exportHtml" href="#" class="btn btn-xs btn-outline-secondary"><i class="bi bi-filetype-html"></i> HTML</a>
+          <a id="exportDocx" href="#" class="btn btn-xs btn-outline-secondary"><i class="bi bi-file-earmark-word"></i> DOCX</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="generateLoading" class="text-center py-5 d-none">
+          <div class="spinner-border text-primary mb-3"></div>
+          <p class="text-muted">AI is generating your literature review...<br><small>This may take 30-60 seconds</small></p>
+        </div>
+        <div id="generateError" class="d-none"></div>
+        <div id="reviewContent" class="review-output">
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-stars display-3 opacity-15"></i>
+            <p class="mt-3">Your generated review will appear here.</p>
+            <p class="small">Select papers and click Generate to start.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentReviewId = null;
+
+document.querySelectorAll('.paper-checkbox').forEach(cb => cb.addEventListener('change', updateCount));
+
+function updateCount() {
+  const count = document.querySelectorAll('.paper-checkbox:checked').length;
+  document.getElementById('selectedCount').textContent = count + ' selected';
+}
+
+function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); updateCount(); }
+function selectNone() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = false; }); updateCount(); }
+
+function filterPapers(query) {
+  document.querySelectorAll('.paper-item').forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('.paper-checkbox:checked')).map(cb => parseInt(cb.value));
+}
+
+async function generateReview() {
+  const topic = document.getElementById('reviewTopic').value.trim();
+  const paperIds = getSelectedIds();
+  if (!topic) { showToast('Please enter a research topic', 'warning'); return; }
+  if (paperIds.length === 0) { showToast('Please select at least one paper', 'warning'); return; }
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('generateLoading').classList.remove('d-none');
+  document.getElementById('reviewContent').innerHTML = '';
+  document.getElementById('generateError').classList.add('d-none');
+
+  try {
+    const res = await fetch('/ai/api/generate-review', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({topic, paper_ids: paperIds})
+    });
+    const data = await res.json();
+    document.getElementById('generateLoading').classList.add('d-none');
+    if (data.success) {
+      currentReviewId = data.review_id;
+      document.getElementById('reviewContent').innerHTML = `<div class="ai-response">${data.content.replace(/\n/g,'<br>').replace(/##\s+([^\n]+)/g,'<h5 class="mt-4 fw-semibold text-primary">$1</h5>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>`;
+      document.getElementById('exportButtons').style.display = 'flex!important';
+      document.getElementById('exportButtons').style.removeProperty('display');
+      document.getElementById('exportMd').href = `/export/review/${currentReviewId}/markdown`;
+      document.getElementById('exportHtml').href = `/export/review/${currentReviewId}/html`;
+      document.getElementById('exportDocx').href = `/export/review/${currentReviewId}/docx`;
+      showToast('Review generated!', 'success');
+    } else {
+      showError(data.error);
+    }
+  } catch(e) { document.getElementById('generateLoading').classList.add('d-none'); showError('Network error: ' + e.message); }
+  document.getElementById('generateBtn').disabled = false;
+}
+
+async function runGapAnalysis() {
+  const paperIds = getSelectedIds();
+  if (!paperIds.length) { showToast('Select papers first', 'warning'); return; }
+  showLoading('Detecting research gaps...');
+  try {
+    const res = await fetch('/ai/api/detect-gaps', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({paper_ids: paperIds})});
+    const data = await res.json();
+    showAIResult('Research Gap Analysis', data.gaps || data.error);
+  } catch(e) { showError(e.message); }
+}
+
+async function runThematic() {
+  const paperIds = getSelectedIds();
+  if (!paperIds.length) { showToast('Select papers first', 'warning'); return; }
+  showLoading('Analyzing themes...');
+  try {
+    const res = await fetch('/ai/api/thematic-analysis', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({paper_ids: paperIds})});
+    const data = await res.json();
+    showAIResult('Thematic Analysis', data.analysis || data.error);
+  } catch(e) { showError(e.message); }
+}
+
+async function runContradictions() {
+  const paperIds = getSelectedIds();
+  if (!paperIds.length) { showToast('Select papers first', 'warning'); return; }
+  showLoading('Detecting contradictions...');
+  try {
+    const res = await fetch('/ai/api/contradictions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({paper_ids: paperIds})});
+    const data = await res.json();
+    showAIResult('Contradiction Detection', data.contradictions || data.error);
+  } catch(e) { showError(e.message); }
+}
+
+async function runResearchQ() {
+  const topic = document.getElementById('reviewTopic').value.trim() || 'selected papers';
+  showLoading('Generating research questions...');
+  try {
+    const res = await fetch('/ai/api/research-questions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({topic})});
+    const data = await res.json();
+    showAIResult('Research Questions', data.questions || data.error);
+  } catch(e) { showError(e.message); }
+}
+
+function showLoading(msg) {
+  document.getElementById('generateLoading').classList.remove('d-none');
+  document.getElementById('generateLoading').querySelector('p').innerHTML = msg;
+  document.getElementById('reviewContent').innerHTML = '';
+}
+
+function showAIResult(title, content) {
+  document.getElementById('generateLoading').classList.add('d-none');
+  document.getElementById('reviewContent').innerHTML = `<h5 class="fw-semibold mb-3"><i class="bi bi-stars me-2 text-primary"></i>${title}</h5><div class="ai-response">${(content||'').replace(/\n/g,'<br>')}</div>`;
+}
+
+function showError(msg) {
+  document.getElementById('generateLoading').classList.add('d-none');
+  document.getElementById('generateError').classList.remove('d-none');
+  document.getElementById('generateError').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${msg}</div>`;
+}
+</script>
+{% endblock %}

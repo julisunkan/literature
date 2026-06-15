@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Search Papers — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}Search Papers{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <form method="GET" action="/search" id="searchForm">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="input-group input-group-lg">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search across 5 academic databases..." autofocus>
+                <button class="btn btn-primary" type="submit">Search</button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Year Range</label>
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control" name="year_from" placeholder="From" value="{{ year_from or '' }}" min="1900" max="2025">
+                <span class="input-group-text">—</span>
+                <input type="number" class="form-control" name="year_to" placeholder="To" value="{{ year_to or '' }}" min="1900" max="2025">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Sort By</label>
+              <select class="form-select form-select-sm" name="sort">
+                <option value="relevance" {% if sort_by=='relevance' %}selected{% endif %}>Relevance</option>
+                <option value="year" {% if sort_by=='year' %}selected{% endif %}>Year (newest)</option>
+                <option value="citations" {% if sort_by=='citations' %}selected{% endif %}>Citations</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Sources</label>
+              <div class="d-flex flex-wrap gap-1">
+                {% for src in ['openalex','semantic_scholar','crossref','pubmed','arxiv'] %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="sources" value="{{ src }}" id="src_{{ src }}"
+                    {% if src in sources %}checked{% endif %}>
+                  <label class="form-check-label small" for="src_{{ src }}">{{ src.replace('_',' ').title() }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if query %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-semibold mb-0">
+    {% if results %}{{ results|length }} results for "<span class="text-primary">{{ query }}</span>"
+    {% else %}No results found for "{{ query }}"{% endif %}
+  </h5>
+  {% if results %}
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-success" onclick="saveAllPapers()">
+      <i class="bi bi-bookmark-plus"></i> Save All
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+{% if results %}
+<div id="resultsContainer">
+  {% for paper in results %}
+  <div class="card card-hover mb-3 paper-card" data-paper='{{ paper | tojson | e }}'>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+          <h6 class="fw-semibold mb-1">
+            {% if paper.url %}
+            <a href="{{ paper.url }}" target="_blank" class="text-decoration-none">{{ paper.title }}</a>
+            {% else %}{{ paper.title }}{% endif %}
+          </h6>
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            {% if paper.authors %}<span class="text-muted small"><i class="bi bi-person me-1"></i>{{ paper.authors[:80] }}{% if paper.authors|length > 80 %}...{% endif %}</span>{% endif %}
+            {% if paper.year %}<span class="badge bg-light text-dark border">{{ paper.year }}</span>{% endif %}
+            {% if paper.journal %}<span class="text-muted small"><i class="bi bi-journal me-1"></i>{{ paper.journal[:40] }}</span>{% endif %}
+            {% if paper.citations_count %}<span class="text-muted small"><i class="bi bi-quote me-1"></i>{{ paper.citations_count }} citations</span>{% endif %}
+            <span class="badge source-badge-{{ paper.source|lower|replace(' ','_') }}">{{ paper.source }}</span>
+          </div>
+          {% if paper.abstract %}
+          <p class="text-muted small mb-2 abstract-text">{{ paper.abstract[:300] }}{% if paper.abstract|length > 300 %}... <button class="btn btn-link btn-sm p-0" onclick="toggleAbstract(this)">Show more</button>{% endif %}</p>
+          {% if paper.abstract|length > 300 %}
+          <p class="text-muted small mb-2 abstract-full d-none">{{ paper.abstract }}</p>
+          {% endif %}
+          {% endif %}
+          {% if paper.doi %}<div class="small text-muted"><i class="bi bi-link-45deg"></i> DOI: {{ paper.doi }}</div>{% endif %}
+        </div>
+        <div class="d-flex flex-column gap-1">
+          <button class="btn btn-sm btn-primary" onclick="savePaper(this, {{ paper | tojson | e }})">
+            <i class="bi bi-bookmark-plus"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="summarizePaper('{{ paper.abstract | replace("'","\\'")|replace('"','\\"') }}')">
+            <i class="bi bi-stars"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-search display-1 text-muted opacity-25"></i>
+  <h5 class="mt-3 text-muted">No results found</h5>
+  <p class="text-muted">Try different keywords or check your spelling</p>
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-search display-1 opacity-15"></i>
+  <h5 class="mt-3">Search Academic Databases</h5>
+  <p>Search across OpenAlex, Semantic Scholar, Crossref, PubMed, and arXiv</p>
+  <div class="row g-2 mt-3 justify-content-center">
+    {% for q in ['machine learning', 'climate change', 'COVID-19', 'renewable energy'] %}
+    <div class="col-auto"><a href="/search?q={{ q }}&sources=openalex&sources=arxiv" class="btn btn-outline-secondary btn-sm">{{ q }}</a></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Summarize Modal -->
+<div class="modal fade" id="summarizeModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-stars me-2"></i>AI Summary</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="summaryLoading" class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted">Analyzing with AI...</p>
+        </div>
+        <div id="summaryContent" class="d-none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function savePaper(btn, paper) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+  try {
+    const res = await fetch('/api/papers/save', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(paper)
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.innerHTML = '<i class="bi bi-bookmark-check-fill"></i>';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-success');
+      showToast('Paper saved to library!', 'success');
+    }
+  } catch(e) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-bookmark-plus"></i>'; showToast('Error saving paper', 'danger'); }
+}
+
+function saveAllPapers() {
+  document.querySelectorAll('.paper-card').forEach(card => {
+    const paper = JSON.parse(card.dataset.paper);
+    const btn = card.querySelector('button');
+    savePaper(btn, paper);
+  });
+}
+
+async function summarizePaper(abstract) {
+  const modal = new bootstrap.Modal(document.getElementById('summarizeModal'));
+  modal.show();
+  document.getElementById('summaryLoading').classList.remove('d-none');
+  document.getElementById('summaryContent').classList.add('d-none');
+  try {
+    const res = await fetch('/ai/api/summarize', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({abstract})
+    });
+    const data = await res.json();
+    document.getElementById('summaryLoading').classList.add('d-none');
+    const content = document.getElementById('summaryContent');
+    content.classList.remove('d-none');
+    if (data.summary) {
+      content.innerHTML = `<div class="ai-response">${data.summary.replace(/\n/g,'<br>')}</div>`;
+    } else {
+      content.innerHTML = `<div class="alert alert-warning">${data.error || 'Failed to summarize'}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('summaryLoading').classList.add('d-none');
+    document.getElementById('summaryContent').innerHTML = '<div class="alert alert-danger">API error. Check your Groq API key in Admin settings.</div>';
+    document.getElementById('summaryContent').classList.remove('d-none');
+  }
+}
+
+function toggleAbstract(btn) {
+  const card = btn.closest('.card-body');
+  card.querySelector('.abstract-text').classList.toggle('d-none');
+  card.querySelector('.abstract-full').classList.toggle('d-none');
+  btn.textContent = btn.textContent === 'Show more' ? 'Show less' : 'Show more';
+}
+</script>
+{% endblock %}

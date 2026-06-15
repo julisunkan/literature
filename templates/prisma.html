@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}PRISMA Review — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}PRISMA Systematic Review{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">PRISMA Systematic Review</h4>
+    <p class="text-muted mb-0">Preferred Reporting Items for Systematic Reviews and Meta-Analyses</p>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  {% set stages = [
+    ('identification', 'Identification', 'bi-search', 'primary', 'Records identified through database searching'),
+    ('screening', 'Screening', 'bi-funnel', 'warning', 'Records screened after duplicates removed'),
+    ('eligibility', 'Eligibility', 'bi-check-square', 'info', 'Full-text articles assessed for eligibility'),
+    ('inclusion', 'Inclusion', 'bi-check-circle', 'success', 'Studies included in qualitative synthesis'),
+  ] %}
+  {% for stage, label, icon, color, desc in stages %}
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm h-100 prisma-stage" id="stage-{{ stage }}">
+      <div class="card-header bg-{{ color }} text-white">
+        <h6 class="mb-0 fw-semibold"><i class="{{ icon }} me-2"></i>{{ label }}</h6>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">{{ desc }}</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Paper Count</label>
+          <input type="number" class="form-control form-control-sm" id="count-{{ stage }}"
+                 min="0" value="{% if stage=='identification' %}{{ total_papers }}{% else %}0{% endif %}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Exclusion Reason</label>
+          <textarea class="form-control form-control-sm" id="reason-{{ stage }}" rows="2" placeholder="Reason for exclusion..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-semibold"><i class="bi bi-diagram-2 me-2"></i>PRISMA Flow Diagram</h6>
+    <button class="btn btn-sm btn-primary" onclick="generateDiagram()"><i class="bi bi-arrow-clockwise me-1"></i>Generate</button>
+  </div>
+  <div class="card-body">
+    <div id="prismaDiagram" class="text-center py-4 text-muted">
+      <i class="bi bi-diagram-2 display-3 opacity-15"></i>
+      <p class="mt-2">Fill in the counts above and click Generate</p>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-stars me-2"></i>AI-Assisted Screening</h6></div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">Use AI to help screen papers based on inclusion/exclusion criteria.</p>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Inclusion Criteria</label>
+      <textarea class="form-control" id="inclusionCriteria" rows="3" placeholder="e.g., Studies published 2010-2024, peer-reviewed, human subjects..."></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Exclusion Criteria</label>
+      <textarea class="form-control" id="exclusionCriteria" rows="3" placeholder="e.g., Conference papers, reviews only, non-English..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="runScreening()"><i class="bi bi-stars me-2"></i>Run AI Screening</button>
+    <div id="screeningResult" class="mt-3 d-none"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function generateDiagram() {
+  const counts = {
+    identification: parseInt(document.getElementById('count-identification').value) || 0,
+    screening: parseInt(document.getElementById('count-screening').value) || 0,
+    eligibility: parseInt(document.getElementById('count-eligibility').value) || 0,
+    inclusion: parseInt(document.getElementById('count-inclusion').value) || 0,
+  };
+  const excluded_screening = counts.identification - counts.screening;
+  const excluded_eligibility = counts.screening - counts.eligibility;
+  const excluded_inclusion = counts.eligibility - counts.inclusion;
+
+  const html = `
+  <div class="prisma-diagram mx-auto" style="max-width:500px;">
+    <div class="prisma-box primary">
+      <strong>Identification</strong><br>Records identified: <strong>${counts.identification}</strong>
+    </div>
+    <div class="prisma-arrow">&#8595;</div>
+    <div class="prisma-row">
+      <div class="prisma-box warning flex-grow-1">
+        <strong>Screening</strong><br>Records screened: <strong>${counts.screening}</strong>
+      </div>
+      <div class="prisma-excluded">Records excluded: <strong>${excluded_screening}</strong></div>
+    </div>
+    <div class="prisma-arrow">&#8595;</div>
+    <div class="prisma-row">
+      <div class="prisma-box info flex-grow-1">
+        <strong>Eligibility</strong><br>Full-text assessed: <strong>${counts.eligibility}</strong>
+      </div>
+      <div class="prisma-excluded">Full-text excluded: <strong>${excluded_eligibility}</strong></div>
+    </div>
+    <div class="prisma-arrow">&#8595;</div>
+    <div class="prisma-box success">
+      <strong>Included</strong><br>Studies included: <strong>${counts.inclusion}</strong>
+    </div>
+  </div>`;
+  document.getElementById('prismaDiagram').innerHTML = html;
+}
+
+async function runScreening() {
+  const criteria = document.getElementById('inclusionCriteria').value;
+  if (!criteria) { showToast('Please enter inclusion criteria', 'warning'); return; }
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Running...';
+  document.getElementById('screeningResult').classList.remove('d-none');
+  document.getElementById('screeningResult').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">AI screening in progress...</p></div>';
+  try {
+    const res = await fetch('/ai/api/research-questions', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({topic: 'systematic review screening', context: `Inclusion: ${criteria}\nExclusion: ${document.getElementById('exclusionCriteria').value}`})
+    });
+    const data = await res.json();
+    document.getElementById('screeningResult').innerHTML = `<div class="ai-response p-3 bg-light rounded">${(data.questions || data.error || 'No result').replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    document.getElementById('screeningResult').innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="bi bi-stars me-2"></i>Run AI Screening';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block admin_title %}Admin{% endblock %} — Admin Panel</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="/static/css/style.css" rel="stylesheet">
+{% block head %}{% endblock %}
+</head>
+<body class="bg-light">
+<div class="d-flex">
+  <nav id="adminSidebar" style="width:240px;min-height:100vh;background:#1e293b;flex-shrink:0;" class="d-flex flex-column">
+    <div class="p-3 border-bottom" style="border-color:rgba(255,255,255,0.1)!important;">
+      <a href="/julisunkan" class="text-decoration-none">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-shield-check text-primary fs-4"></i>
+          <div>
+            <div class="text-white fw-bold small">Admin Panel</div>
+            <div class="text-secondary" style="font-size:0.7rem;">LitReview</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="p-2 flex-grow-1 overflow-auto">
+      {% set current = request.endpoint %}
+      {% for ep, icon, label, href in [
+        ('admin.dashboard','speedometer2','Dashboard','/julisunkan/'),
+        ('admin.settings','gear','Site Settings','/julisunkan/settings'),
+        ('admin.api_management','key','API Management','/julisunkan/api-management'),
+        ('admin.prompts','chat-text','Prompt Templates','/julisunkan/prompts'),
+        ('admin.features','toggles','Feature Toggles','/julisunkan/features'),
+        ('admin.pwa_settings','phone','PWA Settings','/julisunkan/pwa-settings'),
+        ('admin.logs','journal-text','System Logs','/julisunkan/logs'),
+        ('admin.backup','database','Backup & Restore','/julisunkan/backup'),
+      ] %}
+      <a href="{{ href }}" class="d-flex align-items-center gap-2 p-2 rounded mb-1 text-decoration-none {% if current == ep %}bg-primary text-white{% else %}text-secondary admin-nav-link{% endif %}">
+        <i class="bi bi-{{ icon }}"></i><span class="small">{{ label }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="p-3" style="border-top:1px solid rgba(255,255,255,0.1);">
+      <a href="/" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-arrow-left me-1"></i>Back to App</a>
+    </div>
+  </nav>
+
+  <div class="flex-grow-1 p-4">
+    <div id="adminToast" class="position-fixed top-0 end-0 p-3" style="z-index:9999;"></div>
+    {% block admin_content %}{% endblock %}
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<style>.admin-nav-link:hover{background:rgba(255,255,255,0.08);color:white!important;}</style>
+<script>
+function adminToast(msg, type='success') {
+  const t = document.getElementById('adminToast');
+  t.innerHTML = `<div class="toast show align-items-center text-white bg-${type} border-0"><div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button></div></div>`;
+  setTimeout(() => t.innerHTML='', 3000);
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

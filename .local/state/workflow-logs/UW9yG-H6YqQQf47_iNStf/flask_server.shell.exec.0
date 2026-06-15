@@ -1,0 +1,46 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.24.0.2:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 536-109-322
+127.0.0.1 - - [15/Jun/2026 05:48:21] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:23] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:23] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:24] "GET /static/sw.js HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:25] "GET /offline HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:25] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:25] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:25] "GET /papers HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "GET /reviews HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "[36mGET /static/js/app.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "GET /static/manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "GET /static/icons/icon-512x512.png HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:26] "GET /static/icons/icon-192x192.png HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:29] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:29] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:29] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /static/icons/icon-32x32.png HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /static/sw.js HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /offline HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /reviews HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /papers HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "[36mGET /static/js/app.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /static/manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /static/icons/icon-192x192.png HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:30] "GET /static/icons/icon-512x512.png HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:38] "GET /julisunkan/ HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:38] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:38] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [15/Jun/2026 05:48:40] "GET /search HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jun/2026 05:48:40] "[36mGET /static/js/app.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:40] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [15/Jun/2026 05:48:40] "[36mGET /static/icons/icon-32x32.png HTTP/1.1[0m" 304 -

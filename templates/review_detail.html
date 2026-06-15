@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ review.title[:60] }} — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}Review Detail{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">{{ review.title }}</h4>
+    <div class="text-muted small">
+      <i class="bi bi-calendar me-1"></i>{{ review.created_at[:10] }}
+      {% if review.word_count %}&nbsp;&middot;&nbsp;~{{ review.word_count }} words{% endif %}
+      &nbsp;&middot;&nbsp;<span class="badge bg-{{ 'success' if review.status=='completed' else 'secondary' }}">{{ review.status }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/export/review/{{ review.id }}/markdown" class="btn btn-sm btn-outline-secondary"><i class="bi bi-markdown me-1"></i>MD</a>
+    <a href="/export/review/{{ review.id }}/html" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-html me-1"></i>HTML</a>
+    <a href="/export/review/{{ review.id }}/docx" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-word me-1"></i>DOCX</a>
+    <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-9">
+    {% if review.introduction %}
+    <div class="review-section mb-4">
+      <h5 class="review-section-heading"><i class="bi bi-1-circle me-2"></i>Introduction</h5>
+      <div class="review-content">{{ review.introduction | replace('\n', '<br>') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if review.thematic_analysis %}
+    <div class="review-section mb-4">
+      <h5 class="review-section-heading"><i class="bi bi-2-circle me-2"></i>Thematic Analysis</h5>
+      <div class="review-content">{{ review.thematic_analysis | replace('\n', '<br>') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if review.research_gaps %}
+    <div class="review-section mb-4">
+      <h5 class="review-section-heading"><i class="bi bi-3-circle me-2"></i>Research Gaps</h5>
+      <div class="review-content">{{ review.research_gaps | replace('\n', '<br>') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if review.future_directions %}
+    <div class="review-section mb-4">
+      <h5 class="review-section-heading"><i class="bi bi-4-circle me-2"></i>Future Directions</h5>
+      <div class="review-content">{{ review.future_directions | replace('\n', '<br>') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if review.conclusion %}
+    <div class="review-section mb-4">
+      <h5 class="review-section-heading"><i class="bi bi-5-circle me-2"></i>Conclusion</h5>
+      <div class="review-content">{{ review.conclusion | replace('\n', '<br>') | safe }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-3">
+    {% if papers %}
+    <div class="card shadow-sm mb-3 sticky-top" style="top:80px;">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-journals me-2"></i>Source Papers ({{ papers|length }})</h6></div>
+      <div class="list-group list-group-flush" style="max-height:400px;overflow-y:auto;">
+        {% for p in papers %}
+        <a href="/papers/{{ p.id }}" class="list-group-item list-group-item-action py-2">
+          <div class="small fw-semibold text-truncate">{{ p.title }}</div>
+          <div class="text-muted" style="font-size:0.72rem;">{{ p.authors[:40] if p.authors else '' }} {% if p.year %}({{ p.year }}){% endif %}</div>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="card-footer">
+        <a href="/export/citations/bibtex?{% for p in papers %}ids={{ p.id }}&{% endfor %}" class="btn btn-sm btn-outline-secondary w-100">Export BibTeX</a>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if versions %}
+    <div class="card shadow-sm">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2"></i>Versions</h6></div>
+      <div class="list-group list-group-flush">
+        {% for v in versions %}
+        <div class="list-group-item py-2">
+          <div class="small fw-semibold">Version {{ v.version_number }}</div>
+          <div class="text-muted" style="font-size:0.72rem;">{{ v.created_at[:10] }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

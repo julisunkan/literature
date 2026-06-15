@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Upload PDF — {{ g_site.get('site_name','LitReview') }}{% endblock %}
+{% block page_title %}Upload PDF{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0 fw-semibold"><i class="bi bi-cloud-upload me-2"></i>Upload Research Paper</h5>
+      </div>
+      <div class="card-body">
+        <div id="dropZone" class="upload-zone mb-4">
+          <i class="bi bi-file-earmark-pdf display-3 text-muted opacity-50"></i>
+          <h5 class="mt-3">Drag & Drop your PDF here</h5>
+          <p class="text-muted">or click to browse files</p>
+          <p class="text-muted small">Supports PDF, TXT, DOC, DOCX — Max 50MB</p>
+          <input type="file" id="fileInput" accept=".pdf,.txt,.doc,.docx" class="d-none">
+          <button class="btn btn-outline-primary mt-2" onclick="document.getElementById('fileInput').click()">
+            <i class="bi bi-folder2-open me-2"></i>Browse Files
+          </button>
+        </div>
+
+        <div id="uploadProgress" class="d-none mb-4">
+          <div class="d-flex justify-content-between mb-1">
+            <span id="uploadFileName" class="small fw-semibold"></span>
+            <span id="uploadPercent" class="small">0%</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" style="width:0%"></div>
+          </div>
+          <p class="text-muted small mt-2" id="uploadStatus">Uploading...</p>
+        </div>
+
+        <div id="uploadResult" class="d-none">
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Upload successful!</strong> Text extracted and paper processed.
+          </div>
+          <div id="extractedSections"></div>
+        </div>
+
+        <div id="uploadError" class="d-none">
+          <div class="alert alert-danger" id="uploadErrorMsg"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header"><h6 class="mb-0 fw-semibold">What happens when you upload?</h6></div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for step, icon, desc in [('Text Extraction','file-text','PDF text is extracted using PDFMiner and PyPDF2'),('OCR Processing','eye','Scanned documents use OCR for text recognition'),('Section Detection','diagram-2','Abstract, methodology, results sections are identified'),('AI Ready','stars','Paper becomes available for AI analysis and chat')] %}
+          <div class="col-6">
+            <div class="d-flex gap-2 align-items-start">
+              <i class="bi bi-{{ icon }} text-primary mt-1"></i>
+              <div><div class="small fw-semibold">{{ step }}</div><div class="text-muted" style="font-size:0.8rem;">{{ desc }}</div></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  const allowed = ['pdf','txt','doc','docx'];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) { showError('Invalid file type. Only PDF, TXT, DOC, DOCX allowed.'); return; }
+  if (file.size > 50 * 1024 * 1024) { showError('File too large. Maximum 50MB.'); return; }
+  uploadFile(file);
+}
+
+async function uploadFile(file) {
+  document.getElementById('uploadProgress').classList.remove('d-none');
+  document.getElementById('uploadResult').classList.add('d-none');
+  document.getElementById('uploadError').classList.add('d-none');
+  document.getElementById('uploadFileName').textContent = file.name;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('uploadPercent').textContent = pct + '%';
+    }
+  };
+
+  xhr.onload = () => {
+    document.getElementById('uploadStatus').textContent = 'Processing text...';
+    try {
+      const data = JSON.parse(xhr.responseText);
+      if (data.success) {
+        document.getElementById('progressBar').style.width = '100%';
+        document.getElementById('uploadStatus').textContent = 'Complete!';
+        document.getElementById('uploadResult').classList.remove('d-none');
+        if (data.sections) {
+          const sections = data.sections;
+          let html = '<h6 class="mt-3">Detected Sections:</h6><div class="row g-2">';
+          for (const [key, val] of Object.entries(sections)) {
+            if (val) html += `<div class="col-6"><span class="badge bg-light text-dark border"><i class="bi bi-check-circle-fill text-success me-1"></i>${key}</span></div>`;
+          }
+          html += '</div>';
+          document.getElementById('extractedSections').innerHTML = html;
+        }
+        showToast('Paper uploaded and processed!', 'success');
+      } else {
+        showError(data.error || 'Upload failed');
+      }
+    } catch(e) { showError('Processing error'); }
+  };
+
+  xhr.onerror = () => showError('Network error. Please try again.');
+  xhr.open('POST', '/upload');
+  xhr.send(formData);
+}
+
+function showError(msg) {
+  document.getElementById('uploadProgress').classList.add('d-none');
+  document.getElementById('uploadError').classList.remove('d-none');
+  document.getElementById('uploadErrorMsg').textContent = msg;
+}
+</script>
+{% endblock %}
