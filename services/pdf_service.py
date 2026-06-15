@@ -100,6 +100,17 @@ def process_upload(file_path, original_name, paper_id=None):
                    ('pdf_processed', f'Processed: {original_name}'))
         db.commit()
         db.close()
+
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            db2 = get_db()
+            db2.execute('UPDATE paper_files SET file_path=NULL WHERE id=?', (file_id,))
+            db2.commit()
+            db2.close()
+        except Exception:
+            pass
+
         return {'success': True, 'file_id': file_id, 'text_length': len(text), 'sections': sections,
                 'text_preview': text[:500] if text else ''}
     except Exception as e:
