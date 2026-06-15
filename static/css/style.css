@@ -137,3 +137,56 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Dark mode toggle button */
+#darkToggle { background: none; border: none; padding: 0.55rem 0.75rem; border-radius: 6px; color: rgba(255,255,255,0.65); font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; transition: all 0.15s; margin-bottom: 2px; }
+#darkToggle:hover { background: rgba(255,255,255,0.08); color: white; }
+#darkToggle i { font-size: 1rem; flex-shrink: 0; width: 18px; text-align: center; }
+
+/* ── Dark Mode ── */
+body.dark { background: #0f172a; color: #e2e8f0; }
+body.dark .top-nav { background: #1e293b; border-bottom-color: #334155; }
+body.dark .top-nav-title { color: #94a3b8; }
+body.dark .btn-outline-secondary { color: #94a3b8; border-color: #475569; }
+body.dark .btn-outline-secondary:hover { background: #334155; color: #e2e8f0; border-color: #475569; }
+body.dark .card { background: #1e293b; border-color: #334155; }
+body.dark .card-header { background: #1e293b; border-bottom-color: #334155; color: #e2e8f0; }
+body.dark .card-body { color: #e2e8f0; }
+body.dark .stat-card { background: #1e293b; border-color: #334155; }
+body.dark .stat-value { color: #f1f5f9; }
+body.dark .stat-label { color: #94a3b8; }
+body.dark .feature-card { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.dark .feature-card:hover { box-shadow: 0 4px 16px rgba(37,99,235,0.2); }
+body.dark .hero-section { background: linear-gradient(135deg, #1e3a5f 0%, #2e1f5e 100%); }
+body.dark .review-section { background: #1e293b; border-color: #334155; }
+body.dark .review-content, body.dark .ai-response { color: #cbd5e1; }
+body.dark .chat-bubble.assistant { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.dark .upload-zone { background: #1e293b; border-color: #475569; }
+body.dark .upload-zone:hover { border-color: var(--primary); background: rgba(37,99,235,0.1); }
+body.dark .prisma-box { background: #1e293b; }
+body.dark .table { color: #e2e8f0; border-color: #334155; }
+body.dark .table th { background: #1e293b; color: #94a3b8; border-color: #334155; }
+body.dark .table td { border-color: #334155; }
+body.dark .table-hover tbody tr:hover { background: rgba(255,255,255,0.04); }
+body.dark .form-control, body.dark .form-select { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+body.dark .form-control:focus, body.dark .form-select:focus { background: #1e293b; border-color: var(--primary); color: #e2e8f0; box-shadow: 0 0 0 0.2rem rgba(37,99,235,0.25); }
+body.dark .form-control::placeholder { color: #475569; }
+body.dark .input-group-text { background: #334155; border-color: #475569; color: #94a3b8; }
+body.dark .dropdown-menu { background: #1e293b; border-color: #334155; }
+body.dark .dropdown-item { color: #e2e8f0; }
+body.dark .dropdown-item:hover { background: #334155; }
+body.dark .dropdown-header, body.dark .dropdown-item-text { color: #94a3b8; }
+body.dark .border-bottom { border-bottom-color: #334155!important; }
+body.dark .text-muted { color: #64748b !important; }
+body.dark .bg-light { background: #1e293b !important; }
+body.dark .bg-white { background: #1e293b !important; }
+body.dark .alert-info { background: #1e3a5f; border-color: #2563eb; color: #bfdbfe; }
+body.dark .alert-warning { background: #3d2c0a; border-color: #d97706; color: #fde68a; }
+body.dark .alert-danger { background: #3d0a0a; border-color: #dc2626; color: #fca5a5; }
+body.dark .alert-success { background: #052e16; border-color: #16a34a; color: #86efac; }
+body.dark .modal-content { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.dark .modal-header, body.dark .modal-footer { border-color: #334155; }
+body.dark .badge.bg-light { background: #334155 !important; color: #e2e8f0 !important; }
+body.dark ::-webkit-scrollbar-track { background: #0f172a; }
+body.dark ::-webkit-scrollbar-thumb { background: #334155; }
+body.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
