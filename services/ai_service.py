@@ -102,6 +102,8 @@ def call_ollama(prompt, model='llama3'):
     url_row = db.execute("SELECT key_value FROM api_settings WHERE name='ollama_url'").fetchone()
     db.close()
     base_url = (url_row['key_value'] if url_row else '') or Config.OLLAMA_URL
+    if not base_url or 'localhost' in base_url or '127.0.0.1' in base_url:
+        raise ValueError('Ollama is not available in this environment. Configure a remote Ollama URL in Admin > API Management to use it.')
     url = f'{base_url}/api/generate'
     payload = {'model': model, 'prompt': prompt, 'stream': False}
     resp = requests.post(url, json=payload, timeout=120)
