@@ -30,11 +30,12 @@
             </label>
             {% endfor %}
           </div>
-          <div class="d-flex gap-2 mt-2">
+          <div class="d-flex gap-2 mt-2 align-items-center">
             <button class="btn btn-xs btn-outline-secondary" onclick="selectAll()">Select All</button>
             <button class="btn btn-xs btn-outline-secondary" onclick="selectNone()">Clear</button>
             <span class="text-muted small ms-auto" id="selectedCount">0 selected</span>
           </div>
+          <div id="contextWarning" class="mt-2" style="display:none;"></div>
           {% else %}
           <div class="alert alert-info small">
             <i class="bi bi-info-circle me-1"></i>No papers in library.
@@ -93,11 +94,51 @@
 <script>
 let currentReviewId = null;
 
+const BUDGET = 22800;
+const AVG_ENTRY_CHARS = 1500;
+
 document.querySelectorAll('.paper-checkbox').forEach(cb => cb.addEventListener('change', updateCount));
 
 function updateCount() {
   const count = document.querySelectorAll('.paper-checkbox:checked').length;
   document.getElementById('selectedCount').textContent = count + ' selected';
+  updateContextWarning(count);
+}
+
+function updateContextWarning(count) {
+  const el = document.getElementById('contextWarning');
+  if (!el) return;
+  if (count === 0) { el.style.display = 'none'; return; }
+
+  const perPaperBudget = Math.max(300, Math.floor(BUDGET / count));
+  const abstractBudget = perPaperBudget - 120;
+  const fullFit = Math.floor(BUDGET / AVG_ENTRY_CHARS);
+
+  el.style.display = '';
+  if (count <= fullFit) {
+    el.innerHTML = `<div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+      <i class="bi bi-check-circle-fill text-success"></i>
+      <span class="small text-success fw-semibold">${count} paper${count > 1 ? 's' : ''} selected — all abstracts will be sent in full.</span>
+    </div>`;
+  } else if (count <= fullFit * 2) {
+    el.innerHTML = `<div class="d-flex align-items-start gap-2 p-2 rounded" style="background:#fffbeb;border:1px solid #fde68a;">
+      <i class="bi bi-exclamation-triangle-fill text-warning mt-1 flex-shrink-0"></i>
+      <div class="small">
+        <span class="fw-semibold text-warning-emphasis">Some abstracts may be trimmed.</span>
+        With ${count} papers, each abstract is capped at ~${abstractBudget} characters.
+        Newer papers keep their full text. For best results, select ≤${fullFit} papers.
+      </div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="d-flex align-items-start gap-2 p-2 rounded" style="background:#fff7ed;border:1px solid #fed7aa;">
+      <i class="bi bi-exclamation-octagon-fill text-danger mt-1 flex-shrink-0"></i>
+      <div class="small">
+        <span class="fw-semibold text-danger">Abstracts will be significantly trimmed</span> (only ~${abstractBudget} chars each).
+        The AI will still work, but older papers may lose important detail.
+        Consider selecting the ${fullFit}–${fullFit * 2} most relevant papers.
+      </div>
+    </div>`;
+  }
 }
 
 function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); updateCount(); }
