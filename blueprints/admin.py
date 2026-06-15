@@ -24,6 +24,7 @@ def log_audit(action, entity_type='', entity_id='', old_val='', new_val=''):
 
 @admin_bp.route('/')
 def dashboard():
+    from config import Config
     site = get_site_settings()
     db = get_db()
     stats = {
@@ -37,9 +38,29 @@ def dashboard():
     }
     recent_logs = db.execute('SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 10').fetchall()
     recent_activity = db.execute('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 10').fetchall()
+
+    api_rows = db.execute('SELECT name, key_value FROM api_settings').fetchall()
     db.close()
+    db_keys = {r['name']: r['key_value'] for r in api_rows}
+
+    def _has_key(db_name, env_val):
+        return bool((db_keys.get(db_name) or '').strip() or (env_val or '').strip())
+
+    ollama_url = (db_keys.get('ollama_url') or Config.OLLAMA_URL or '').strip()
+    ollama_ok = bool(ollama_url) and 'localhost' not in ollama_url and '127.0.0.1' not in ollama_url
+
+    ai_provider_status = [
+        {'name': 'Groq',        'ok': _has_key('groq_api_key',        Config.GROQ_API_KEY),       'url': '/julisunkan/api-management'},
+        {'name': 'OpenRouter',  'ok': _has_key('openrouter_api_key',  Config.OPENROUTER_API_KEY),  'url': '/julisunkan/api-management'},
+        {'name': 'Gemini',      'ok': _has_key('gemini_api_key',      Config.GEMINI_API_KEY),      'url': '/julisunkan/api-management'},
+        {'name': 'Ollama',      'ok': ollama_ok,                                                    'url': '/julisunkan/api-management'},
+    ]
+    any_ai_configured = any(p['ok'] for p in ai_provider_status)
+
     return render_template('admin/dashboard.html', site=site, stats=stats,
-                           recent_logs=recent_logs, recent_activity=recent_activity)
+                           recent_logs=recent_logs, recent_activity=recent_activity,
+                           ai_provider_status=ai_provider_status,
+                           any_ai_configured=any_ai_configured)
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 def settings():
