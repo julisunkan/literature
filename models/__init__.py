@@ -244,6 +244,19 @@ def init_db():
             value TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS content_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content_type TEXT NOT NULL,
+            content_id INTEGER,
+            content_title TEXT,
+            content_snippet TEXT,
+            reason TEXT NOT NULL,
+            notes TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP
+        );
     ''')
 
     _seed_defaults(c)

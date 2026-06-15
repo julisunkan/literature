@@ -290,6 +290,68 @@ def delete_backup(backup_id):
     db.close()
     return jsonify({'success': True})
 
+@admin_bp.route('/reports')
+def reports():
+    site = get_site_settings()
+    db = get_db()
+    status_filter = request.args.get('status', '')
+    query = 'SELECT * FROM content_reports'
+    params = []
+    if status_filter:
+        query += ' WHERE status=?'
+        params.append(status_filter)
+    query += ' ORDER BY created_at DESC'
+    report_list = db.execute(query, params).fetchall()
+    pending_count = db.execute("SELECT COUNT(*) as c FROM content_reports WHERE status='pending'").fetchone()['c']
+    db.close()
+    return render_template('admin/reports.html', site=site, reports=report_list,
+                           pending_count=pending_count, status_filter=status_filter)
+
+@admin_bp.route('/api/reports/<int:report_id>/approve', methods=['POST'])
+def approve_report(report_id):
+    db = get_db()
+    db.execute("UPDATE content_reports SET status='approved', resolved_at=CURRENT_TIMESTAMP WHERE id=?", (report_id,))
+    db.commit()
+    db.close()
+    log_audit('report_approved', 'content_reports', report_id)
+    return jsonify({'success': True})
+
+@admin_bp.route('/api/reports/<int:report_id>/dismiss', methods=['POST'])
+def dismiss_report(report_id):
+    db = get_db()
+    db.execute("UPDATE content_reports SET status='dismissed', resolved_at=CURRENT_TIMESTAMP WHERE id=?", (report_id,))
+    db.commit()
+    db.close()
+    log_audit('report_dismissed', 'content_reports', report_id)
+    return jsonify({'success': True})
+
+@admin_bp.route('/api/reports/<int:report_id>/delete-content', methods=['POST'])
+def delete_reported_content(report_id):
+    db = get_db()
+    report = db.execute('SELECT * FROM content_reports WHERE id=?', (report_id,)).fetchone()
+    if not report:
+        db.close()
+        return jsonify({'success': False, 'error': 'Report not found'})
+    content_type = report['content_type']
+    content_id = report['content_id']
+    deleted = False
+    try:
+        if content_type == 'review' and content_id:
+            db.execute('DELETE FROM literature_reviews WHERE id=?', (content_id,))
+            deleted = True
+        elif content_type == 'chat' and content_id:
+            db.execute('DELETE FROM chat_messages WHERE session_id=?', (content_id,))
+            db.execute('DELETE FROM chat_sessions WHERE id=?', (content_id,))
+            deleted = True
+        db.execute("UPDATE content_reports SET status='approved', resolved_at=CURRENT_TIMESTAMP WHERE id=?", (report_id,))
+        db.commit()
+        log_audit('reported_content_deleted', content_type, content_id)
+    except Exception as e:
+        db.close()
+        return jsonify({'success': False, 'error': str(e)})
+    db.close()
+    return jsonify({'success': True, 'deleted': deleted})
+
 @admin_bp.route('/api/analytics')
 def analytics_data():
     db = get_db()

@@ -36,6 +36,10 @@
         <a href="/reviews/{{ review.id }}" class="btn btn-sm btn-outline-primary flex-grow-1">View Review</a>
         <a href="/export/review/{{ review.id }}/markdown" class="btn btn-sm btn-outline-secondary"><i class="bi bi-markdown"></i></a>
         <a href="/export/review/{{ review.id }}/html" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-html"></i></a>
+        <button class="btn btn-sm btn-outline-danger" title="Report this content"
+          onclick="openReportModal('review', {{ review.id }}, {{ review.title|tojson }}, {{ (review.introduction or '')|truncate(400)|tojson }})">
+          <i class="bi bi-flag"></i>
+        </button>
       </div>
     </div>
   </div>

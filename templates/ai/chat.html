@@ -159,7 +159,12 @@ function appendMessage(role, content, typing = false) {
     div.innerHTML = `<div class="chat-bubble assistant"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
   } else {
     const text = (content || '').replace(/\n/g, '<br>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    div.innerHTML = `<div class="chat-bubble ${role}">${text}</div>`;
+    if (role === 'assistant') {
+      const snippet = (content || '').substring(0, 400);
+      div.innerHTML = `<div class="chat-bubble ${role} position-relative">${text}<button class="btn btn-xs btn-outline-danger ms-2 mt-1 float-end" style="font-size:0.68rem;padding:1px 6px;" onclick="openReportModal('chat', ${currentSessionId || 'null'}, 'Chat Response', ${JSON.stringify(snippet)})"><i class="bi bi-flag"></i> Report</button></div>`;
+    } else {
+      div.innerHTML = `<div class="chat-bubble ${role}">${text}</div>`;
+    }
   }
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;

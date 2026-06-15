@@ -285,6 +285,28 @@ def prisma():
     return render_template('prisma.html', site=site, total_papers=total_papers,
                            notifications=get_notifications())
 
+@main_bp.route('/api/report-content', methods=['POST'])
+def report_content():
+    data = request.get_json()
+    content_type = data.get('content_type', '').strip()
+    content_id = data.get('content_id')
+    content_title = data.get('content_title', '')[:200]
+    content_snippet = data.get('content_snippet', '')[:500]
+    reason = data.get('reason', '').strip()
+    notes = data.get('notes', '')[:1000]
+    if not content_type or not reason:
+        return jsonify({'success': False, 'error': 'Missing required fields'})
+    db = get_db()
+    db.execute(
+        'INSERT INTO content_reports (content_type, content_id, content_title, content_snippet, reason, notes) VALUES (?, ?, ?, ?, ?, ?)',
+        (content_type, content_id, content_title, content_snippet, reason, notes)
+    )
+    db.execute('INSERT INTO notifications (type, title, message) VALUES (?, ?, ?)',
+               ('report', 'Content Reported', f'A {content_type} was reported: {reason}'))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
+
 @main_bp.route('/offline')
 def offline():
     return render_template('offline.html')

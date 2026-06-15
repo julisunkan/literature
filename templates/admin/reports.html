@@ -1,0 +1,148 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}Content Reports{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">Content Reports</h4>
+    <p class="text-muted mb-0">User-flagged AI-generated content</p>
+  </div>
+  {% if pending_count %}
+  <span class="badge bg-danger fs-6">{{ pending_count }} pending</span>
+  {% endif %}
+</div>
+
+<!-- Filter tabs -->
+<div class="mb-3">
+  {% for label, val in [('All', ''), ('Pending', 'pending'), ('Approved', 'approved'), ('Dismissed', 'dismissed')] %}
+  <a href="/julisunkan/reports{% if val %}?status={{ val }}{% endif %}"
+     class="btn btn-sm {% if status_filter == val %}btn-primary{% else %}btn-outline-secondary{% endif %} me-1">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if reports %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white rounded shadow-sm">
+    <thead class="table-light">
+      <tr>
+        <th style="width:90px;">Type</th>
+        <th>Title</th>
+        <th style="width:130px;">Reason</th>
+        <th>Notes</th>
+        <th style="width:110px;">Reported</th>
+        <th style="width:100px;">Status</th>
+        <th style="width:180px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reports %}
+      <tr id="row-{{ r.id }}">
+        <td>
+          <span class="badge {% if r.content_type == 'review' %}bg-primary{% else %}bg-info text-dark{% endif %}">
+            <i class="bi bi-{% if r.content_type == 'review' %}file-earmark-text{% else %}chat-dots{% endif %} me-1"></i>{{ r.content_type }}
+          </span>
+        </td>
+        <td>
+          <div class="fw-semibold small">{{ r.content_title or '—' }}</div>
+          {% if r.content_snippet %}
+          <div class="text-muted" style="font-size:0.72rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ r.content_snippet }}">
+            {{ r.content_snippet[:120] }}
+          </div>
+          {% endif %}
+          {% if r.content_id %}
+          <div style="font-size:0.68rem;" class="text-secondary">ID: {{ r.content_id }}</div>
+          {% endif %}
+        </td>
+        <td><span class="badge bg-warning text-dark">{{ r.reason }}</span></td>
+        <td><span class="small text-muted">{{ r.notes or '—' }}</span></td>
+        <td><span class="small text-muted">{{ r.created_at[:10] }}</span></td>
+        <td>
+          <span class="badge {% if r.status == 'pending' %}bg-danger{% elif r.status == 'approved' %}bg-success{% else %}bg-secondary{% endif %}">
+            {{ r.status }}
+          </span>
+        </td>
+        <td>
+          {% if r.status == 'pending' %}
+          <div class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-xs btn-outline-success" onclick="approveReport({{ r.id }})" title="Mark as reviewed / no action needed">
+              <i class="bi bi-check-lg"></i> Approve
+            </button>
+            {% if r.content_id %}
+            <button class="btn btn-xs btn-danger" onclick="deleteContent({{ r.id }}, '{{ r.content_type }}')" title="Delete the reported content">
+              <i class="bi bi-trash3"></i> Remove
+            </button>
+            {% endif %}
+            <button class="btn btn-xs btn-outline-secondary" onclick="dismissReport({{ r.id }})" title="Dismiss without action">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          {% else %}
+          <span class="text-muted small">{{ r.resolved_at[:10] if r.resolved_at else '—' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-5 bg-white rounded shadow-sm">
+  <i class="bi bi-shield-check display-3 text-success opacity-50"></i>
+  <h5 class="mt-3 fw-semibold">No reports{% if status_filter %} with status "{{ status_filter }}"{% endif %}</h5>
+  <p class="text-muted">All clear — no flagged content to review.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function approveReport(id) {
+  if (!confirm('Mark this report as reviewed (no content removed)?')) return;
+  const res = await fetch(`/julisunkan/api/reports/${id}/approve`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    updateRow(id, 'approved');
+    adminToast('Report marked as approved.');
+  } else {
+    adminToast(data.error || 'Error', 'danger');
+  }
+}
+
+async function dismissReport(id) {
+  const res = await fetch(`/julisunkan/api/reports/${id}/dismiss`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    updateRow(id, 'dismissed');
+    adminToast('Report dismissed.');
+  } else {
+    adminToast(data.error || 'Error', 'danger');
+  }
+}
+
+async function deleteContent(id, type) {
+  if (!confirm(`This will permanently delete the reported ${type}. Are you sure?`)) return;
+  const res = await fetch(`/julisunkan/api/reports/${id}/delete-content`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    updateRow(id, 'approved');
+    adminToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted and report resolved.`, 'success');
+  } else {
+    adminToast(data.error || 'Error', 'danger');
+  }
+}
+
+function updateRow(id, newStatus) {
+  const row = document.getElementById('row-' + id);
+  if (!row) return;
+  const statusCell = row.querySelector('td:nth-child(6) .badge');
+  if (statusCell) {
+    statusCell.className = 'badge ' + (newStatus === 'approved' ? 'bg-success' : 'bg-secondary');
+    statusCell.textContent = newStatus;
+  }
+  const actionsCell = row.querySelector('td:last-child');
+  if (actionsCell) actionsCell.innerHTML = '<span class="text-muted small">resolved</span>';
+}
+</script>
+{% endblock %}
