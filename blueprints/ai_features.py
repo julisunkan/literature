@@ -39,8 +39,15 @@ def api_generate_review():
         db = get_db()
         placeholders = ','.join('?' * len(paper_ids))
         papers = db.execute(f'SELECT * FROM papers WHERE id IN ({placeholders})', paper_ids).fetchall()
-        db.close()
         papers_data = [dict(p) for p in papers]
+        for p in papers_data:
+            pf = db.execute(
+                'SELECT extracted_text, sections FROM paper_files WHERE paper_id=? ORDER BY id DESC LIMIT 1',
+                (p['id'],)
+            ).fetchone()
+            if pf and pf['extracted_text'] and len(pf['extracted_text'].strip()) > 100:
+                p['extracted_text'] = pf['extracted_text']
+        db.close()
         result = generate_literature_review(topic, papers_data)
         parts = _parse_review_sections(result)
         db = get_db()

@@ -67,19 +67,23 @@ def build_papers_text(papers, fields=('title', 'authors', 'year', 'abstract'), b
     for p in sorted_papers:
         header_len = paper_header_len(p)
         abstract_budget = per_paper_budget - header_len
+
+        extracted = p.get('extracted_text', '') or ''
         abstract = p.get('abstract', '') or ''
+        body = extracted if extracted else abstract
 
         if abstract_budget < 100:
             abstract_budget = 100
 
-        if len(abstract) > abstract_budget:
-            abstract = abstract[:abstract_budget] + '…'
+        if len(body) > abstract_budget:
+            body = body[:abstract_budget] + '…'
             truncated_count += 1
 
         lines = []
         for f in fields:
             if f == 'abstract':
-                lines.append(f'Abstract: {abstract}')
+                label = 'Full Text' if extracted else 'Abstract'
+                lines.append(f'{label}: {body}')
             else:
                 label = FIELD_LABELS.get(f, f.capitalize())
                 lines.append(f'{label}: {p.get(f, "")}')
