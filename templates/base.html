@@ -19,69 +19,71 @@
 </head>
 <body>
 
+<div id="sidebarOverlay"></div>
 <div class="d-flex" id="wrapper">
   <!-- Sidebar -->
-  <nav id="sidebar" class="d-flex flex-column">
+  <nav id="sidebar">
     <div class="sidebar-header">
-      <a href="/" class="text-decoration-none">
-        <div class="d-flex align-items-center gap-2">
-          <div class="sidebar-logo"><i class="bi bi-book-half"></i></div>
-          <div>
-            <div class="sidebar-brand">LitReview</div>
-            <div class="sidebar-tagline">AI Research Assistant</div>
-          </div>
+      <a href="/" class="sidebar-brand-link">
+        <div class="sidebar-logo"><i class="bi bi-book-half"></i></div>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-brand">LitReview</div>
+          <div class="sidebar-tagline">AI Research Assistant</div>
         </div>
       </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
-    <div class="sidebar-body flex-grow-1">
-      <div class="sidebar-section-label">RESEARCH</div>
-      <a href="/" class="sidebar-link {% if request.endpoint == 'main.index' %}active{% endif %}">
-        <i class="bi bi-house-door"></i> Home
+    <div class="sidebar-body">
+      <div class="sidebar-section-label"><span>Research</span></div>
+      <a href="/" class="sidebar-link {% if request.endpoint == 'main.index' %}active{% endif %}" data-tooltip="Home">
+        <i class="bi bi-house-door"></i><span>Home</span>
       </a>
-      <a href="/dashboard" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
-        <i class="bi bi-speedometer2"></i> Dashboard
+      <a href="/dashboard" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
       </a>
-      <a href="/search" class="sidebar-link {% if request.endpoint == 'main.search' %}active{% endif %}">
-        <i class="bi bi-search"></i> Search Papers
+      <a href="/search" class="sidebar-link {% if request.endpoint == 'main.search' %}active{% endif %}" data-tooltip="Search Papers">
+        <i class="bi bi-search"></i><span>Search Papers</span>
       </a>
-      <a href="/papers" class="sidebar-link {% if request.endpoint == 'main.papers' %}active{% endif %}">
-        <i class="bi bi-journals"></i> My Library
+      <a href="/papers" class="sidebar-link {% if request.endpoint == 'main.papers' %}active{% endif %}" data-tooltip="My Library">
+        <i class="bi bi-journals"></i><span>My Library</span>
       </a>
-      <a href="/upload" class="sidebar-link {% if request.endpoint == 'main.upload' %}active{% endif %}">
-        <i class="bi bi-cloud-upload"></i> Upload PDF
-      </a>
-
-      <div class="sidebar-section-label mt-3">AI TOOLS</div>
-      <a href="/ai/generate-review" class="sidebar-link {% if request.endpoint == 'ai.generate_review' %}active{% endif %}">
-        <i class="bi bi-stars"></i> Generate Review
-      </a>
-      <a href="/ai/chat" class="sidebar-link {% if request.endpoint == 'ai.chat' %}active{% endif %}">
-        <i class="bi bi-chat-dots"></i> AI Chat
+      <a href="/upload" class="sidebar-link {% if request.endpoint == 'main.upload' %}active{% endif %}" data-tooltip="Upload PDF">
+        <i class="bi bi-cloud-upload"></i><span>Upload PDF</span>
       </a>
 
-      <div class="sidebar-section-label mt-3">ANALYSIS</div>
-      <a href="/matrix" class="sidebar-link {% if request.endpoint == 'main.matrix' %}active{% endif %}">
-        <i class="bi bi-table"></i> Literature Matrix
+      <div class="sidebar-section-label"><span>AI Tools</span></div>
+      <a href="/ai/generate-review" class="sidebar-link {% if request.endpoint == 'ai.generate_review' %}active{% endif %}" data-tooltip="Generate Review">
+        <i class="bi bi-stars"></i><span>Generate Review</span>
       </a>
-      <a href="/visualizations" class="sidebar-link {% if request.endpoint == 'main.visualizations' %}active{% endif %}">
-        <i class="bi bi-bar-chart-line"></i> Visualizations
-      </a>
-      <a href="/knowledge-graph" class="sidebar-link {% if request.endpoint == 'main.knowledge_graph' %}active{% endif %}">
-        <i class="bi bi-diagram-3"></i> Knowledge Graph
-      </a>
-      <a href="/prisma" class="sidebar-link {% if request.endpoint == 'main.prisma' %}active{% endif %}">
-        <i class="bi bi-funnel"></i> PRISMA Review
+      <a href="/ai/chat" class="sidebar-link {% if request.endpoint == 'ai.chat' %}active{% endif %}" data-tooltip="AI Chat">
+        <i class="bi bi-chat-dots"></i><span>AI Chat</span>
       </a>
 
-      <div class="sidebar-section-label mt-3">OUTPUTS</div>
-      <a href="/reviews" class="sidebar-link {% if request.endpoint in ['main.reviews','main.review_detail'] %}active{% endif %}">
-        <i class="bi bi-file-earmark-text"></i> Reviews
+      <div class="sidebar-section-label"><span>Analysis</span></div>
+      <a href="/matrix" class="sidebar-link {% if request.endpoint == 'main.matrix' %}active{% endif %}" data-tooltip="Literature Matrix">
+        <i class="bi bi-table"></i><span>Literature Matrix</span>
+      </a>
+      <a href="/visualizations" class="sidebar-link {% if request.endpoint == 'main.visualizations' %}active{% endif %}" data-tooltip="Visualizations">
+        <i class="bi bi-bar-chart-line"></i><span>Visualizations</span>
+      </a>
+      <a href="/knowledge-graph" class="sidebar-link {% if request.endpoint == 'main.knowledge_graph' %}active{% endif %}" data-tooltip="Knowledge Graph">
+        <i class="bi bi-diagram-3"></i><span>Knowledge Graph</span>
+      </a>
+      <a href="/prisma" class="sidebar-link {% if request.endpoint == 'main.prisma' %}active{% endif %}" data-tooltip="PRISMA Review">
+        <i class="bi bi-funnel"></i><span>PRISMA Review</span>
+      </a>
+
+      <div class="sidebar-section-label"><span>Outputs</span></div>
+      <a href="/reviews" class="sidebar-link {% if request.endpoint in ['main.reviews','main.review_detail'] %}active{% endif %}" data-tooltip="Reviews">
+        <i class="bi bi-file-earmark-text"></i><span>Reviews</span>
       </a>
     </div>
 
     <div class="sidebar-footer">
-      <button id="darkToggle" onclick="toggleDark()">
+      <button id="darkToggle" onclick="toggleDark()" data-tooltip="Toggle Theme">
         <i class="bi bi-moon-stars"></i>
         <span>Dark Mode</span>
       </button>
@@ -92,26 +94,26 @@
   <div id="page-content-wrapper" class="flex-grow-1">
     <!-- Top navbar -->
     <nav class="top-nav">
-      <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-3">
+      <button id="sidebarToggle" aria-label="Toggle menu">
         <i class="bi bi-list"></i>
       </button>
-      <span class="top-nav-title d-none d-md-block">{% block page_title %}{% endblock %}</span>
+      <span class="top-nav-title">{% block page_title %}{% endblock %}</span>
       <div class="ms-auto d-flex align-items-center gap-2">
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary position-relative" data-bs-toggle="dropdown">
+          <button class="top-nav-btn position-relative" data-bs-toggle="dropdown" aria-label="Notifications">
             <i class="bi bi-bell"></i>
             {% if g_notif_count > 0 %}
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem;">{{ g_notif_count }}</span>
+            <span class="notif-badge">{{ g_notif_count }}</span>
             {% endif %}
           </button>
-          <ul class="dropdown-menu dropdown-menu-end" id="notifDropdown" style="width:320px;max-height:400px;overflow-y:auto;">
-            <li><h6 class="dropdown-header">Notifications</h6></li>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg" id="notifDropdown" style="width:320px;max-height:400px;overflow-y:auto;">
+            <li><h6 class="dropdown-header fw-semibold">Notifications</h6></li>
             {% if notifications %}
               {% for n in notifications %}
               <li>
                 <div class="dropdown-item-text py-2 border-bottom">
                   <div class="d-flex gap-2 align-items-start">
-                    <span class="badge bg-{% if n.type=='review' %}success{% elif n.type=='export' %}info{% elif n.type=='upload' %}warning{% else %}secondary{% endif %} mt-1">{{ n.type }}</span>
+                    <span class="badge bg-{% if n.type=='review' %}success{% elif n.type=='export' %}info{% elif n.type=='upload' %}warning{% else %}secondary{% endif %} mt-1" style="font-size:0.65rem;">{{ n.type }}</span>
                     <div>
                       <div class="fw-semibold small">{{ n.title }}</div>
                       <div class="text-muted small">{{ n.message }}</div>
@@ -120,7 +122,7 @@
                 </div>
               </li>
               {% endfor %}
-              <li><button class="dropdown-item text-center text-primary" onclick="markNotifsRead()">Mark all read</button></li>
+              <li><button class="dropdown-item text-center text-primary small" onclick="markNotifsRead()">Mark all read</button></li>
             {% else %}
               <li><span class="dropdown-item-text text-muted small">No new notifications</span></li>
             {% endif %}

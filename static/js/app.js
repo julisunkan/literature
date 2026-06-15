@@ -2,30 +2,66 @@
 
 // Sidebar toggle
 document.addEventListener('DOMContentLoaded', () => {
-  const toggleBtn = document.getElementById('sidebarToggle');
-  const sidebar = document.getElementById('sidebar');
+  const toggleBtn  = document.getElementById('sidebarToggle');
+  const closeBtn   = document.getElementById('sidebarCloseBtn');
+  const sidebar    = document.getElementById('sidebar');
+  const overlay    = document.getElementById('sidebarOverlay');
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function openMobileSidebar() {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileSidebar() {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
   if (toggleBtn && sidebar) {
     toggleBtn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('mobile-open');
+      if (isMobile()) {
+        sidebar.classList.contains('mobile-open') ? closeMobileSidebar() : openMobileSidebar();
       } else {
         sidebar.classList.toggle('collapsed');
         localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
       }
     });
-    if (localStorage.getItem('sidebar_collapsed') === 'true' && window.innerWidth > 768) {
+
+    // Restore collapsed state on desktop
+    if (localStorage.getItem('sidebar_collapsed') === 'true' && !isMobile()) {
       sidebar.classList.add('collapsed');
     }
   }
 
-  // Close sidebar on mobile when clicking outside
-  document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('mobile-open')) {
-      if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
-        sidebar.classList.remove('mobile-open');
-      }
+  // Close button inside sidebar (mobile)
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeMobileSidebar);
+  }
+
+  // Overlay click closes sidebar
+  if (overlay) {
+    overlay.addEventListener('click', closeMobileSidebar);
+  }
+
+  // Close on resize to desktop
+  window.addEventListener('resize', () => {
+    if (!isMobile()) {
+      closeMobileSidebar();
     }
   });
+
+  // Close when a nav link is clicked on mobile
+  if (sidebar) {
+    sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (isMobile()) closeMobileSidebar();
+      });
+    });
+  }
 });
 
 // Toast notifications
