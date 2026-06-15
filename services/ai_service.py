@@ -4,6 +4,7 @@ import requests
 from models import get_db
 
 MAX_PROMPT_CHARS = 24000
+TEMPLATE_OVERHEAD = 1200
 
 def truncate_prompt(prompt, limit=MAX_PROMPT_CHARS):
     if len(prompt) <= limit:
@@ -15,6 +16,83 @@ def truncate_prompt(prompt, limit=MAX_PROMPT_CHARS):
         + f'\n\n[... {len(prompt) - keep} characters truncated to fit context window ...]\n\n'
         + prompt[-half:]
     )
+
+def build_papers_text(papers, fields=('title', 'authors', 'year', 'abstract'), budget=None):
+    """
+    Build a papers block for AI prompts with smart per-paper truncation.
+
+    Papers are sorted newest-first so recent work keeps full abstracts.
+    When total text exceeds `budget`, abstracts are trimmed proportionally
+    rather than cutting off mid-paper or dropping papers entirely.
+
+    fields: tuple of keys to include per paper (order preserved).
+    budget: max characters for the returned text (defaults to MAX_PROMPT_CHARS - TEMPLATE_OVERHEAD).
+    """
+    if budget is None:
+        budget = MAX_PROMPT_CHARS - TEMPLATE_OVERHEAD
+
+    if not papers:
+        return 'No papers provided.'
+
+    def year_key(p):
+        try:
+            return int(p.get('year') or 0)
+        except (ValueError, TypeError):
+            return 0
+
+    sorted_papers = sorted(papers, key=year_key, reverse=True)
+
+    FIELD_LABELS = {
+        'title': 'Title',
+        'authors': 'Authors',
+        'year': 'Year',
+        'abstract': 'Abstract',
+    }
+
+    def paper_header_len(p):
+        total = 0
+        for f in fields:
+            if f != 'abstract':
+                label = FIELD_LABELS.get(f, f.capitalize())
+                total += len(f'{label}: {p.get(f, "")}\n')
+        total += len('Abstract: ')
+        return total
+
+    n = len(sorted_papers)
+    per_paper_budget = max(300, budget // n)
+
+    blocks = []
+    truncated_count = 0
+
+    for p in sorted_papers:
+        header_len = paper_header_len(p)
+        abstract_budget = per_paper_budget - header_len
+        abstract = p.get('abstract', '') or ''
+
+        if abstract_budget < 100:
+            abstract_budget = 100
+
+        if len(abstract) > abstract_budget:
+            abstract = abstract[:abstract_budget] + '…'
+            truncated_count += 1
+
+        lines = []
+        for f in fields:
+            if f == 'abstract':
+                lines.append(f'Abstract: {abstract}')
+            else:
+                label = FIELD_LABELS.get(f, f.capitalize())
+                lines.append(f'{label}: {p.get(f, "")}')
+        blocks.append('\n'.join(lines))
+
+    header = ''
+    if truncated_count:
+        header = (
+            f'[Note: {truncated_count} of {n} paper abstract(s) were trimmed to fit the '
+            f'context window. Papers are ordered newest-first so recent abstracts are preserved.]\n\n'
+        )
+
+    return header + '\n\n'.join(blocks)
 
 def get_ai_settings():
     db = get_db()
@@ -160,10 +238,7 @@ def call_ai(prompt, system_msg='You are a helpful academic research assistant.',
 
 def generate_literature_review(topic, papers):
     template = get_prompt('literature_review')
-    papers_text = '\n\n'.join([
-        f"Title: {p.get('title','')}\nAuthors: {p.get('authors','')}\nYear: {p.get('year','')}\nAbstract: {p.get('abstract','')}"
-        for p in papers
-    ])
+    papers_text = build_papers_text(papers, fields=('title', 'authors', 'year', 'abstract'))
     prompt = template.format(topic=topic, papers=papers_text)
     return call_ai(prompt, prompt_type='literature_review')
 
@@ -179,28 +254,19 @@ def generate_research_questions(topic, context=''):
 
 def detect_gaps(papers):
     template = get_prompt('gap_analysis')
-    papers_text = '\n\n'.join([
-        f"Title: {p.get('title','')}\nAbstract: {p.get('abstract','')}"
-        for p in papers
-    ])
+    papers_text = build_papers_text(papers, fields=('title', 'abstract'))
     prompt = template.format(papers=papers_text)
     return call_ai(prompt, prompt_type='gap_analysis')
 
 def thematic_analysis(papers):
     template = get_prompt('thematic_analysis')
-    papers_text = '\n\n'.join([
-        f"Title: {p.get('title','')}\nAbstract: {p.get('abstract','')}"
-        for p in papers
-    ])
+    papers_text = build_papers_text(papers, fields=('title', 'abstract'))
     prompt = template.format(papers=papers_text)
     return call_ai(prompt, prompt_type='thematic_analysis')
 
 def detect_contradictions(papers):
     template = get_prompt('contradiction_detection')
-    papers_text = '\n\n'.join([
-        f"Title: {p.get('title','')}\nYear: {p.get('year','')}\nAbstract: {p.get('abstract','')}"
-        for p in papers
-    ])
+    papers_text = build_papers_text(papers, fields=('title', 'year', 'abstract'))
     prompt = template.format(papers=papers_text)
     return call_ai(prompt, prompt_type='contradiction')
 
