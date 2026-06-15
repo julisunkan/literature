@@ -161,7 +161,19 @@ function appendMessage(role, content, typing = false) {
     const text = (content || '').replace(/\n/g, '<br>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     if (role === 'assistant') {
       const snippet = (content || '').substring(0, 400);
-      div.innerHTML = `<div class="chat-bubble ${role} position-relative">${text}<button class="btn btn-xs btn-outline-danger ms-2 mt-1 float-end" style="font-size:0.68rem;padding:1px 6px;" onclick="openReportModal('chat', ${currentSessionId || 'null'}, 'Chat Response', ${JSON.stringify(snippet)})"><i class="bi bi-flag"></i> Report</button></div>`;
+      const reportBtn = document.createElement('button');
+      reportBtn.className = 'btn btn-xs btn-outline-danger ms-2 mt-1 float-end report-btn';
+      reportBtn.style.cssText = 'font-size:0.68rem;padding:1px 6px;';
+      reportBtn.dataset.type = 'chat';
+      reportBtn.dataset.id = currentSessionId || '';
+      reportBtn.dataset.title = 'Chat Response';
+      reportBtn.dataset.snippet = snippet;
+      reportBtn.innerHTML = '<i class="bi bi-flag"></i> Report';
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role} position-relative`;
+      bubble.innerHTML = text;
+      bubble.appendChild(reportBtn);
+      div.appendChild(bubble);
     } else {
       div.innerHTML = `<div class="chat-bubble ${role}">${text}</div>`;
     }

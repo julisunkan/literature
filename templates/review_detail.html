@@ -17,8 +17,11 @@
     <a href="/export/review/{{ review.id }}/html" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-html me-1"></i>HTML</a>
     <a href="/export/review/{{ review.id }}/docx" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-word me-1"></i>DOCX</a>
     <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
-    <button class="btn btn-sm btn-outline-danger"
-      onclick="openReportModal('review', {{ review.id }}, {{ review.title|tojson }}, {{ (review.introduction or '')|truncate(400)|tojson }})">
+    <button class="btn btn-sm btn-outline-danger report-btn"
+      data-type="review"
+      data-id="{{ review.id }}"
+      data-title="{{ review.title | e }}"
+      data-snippet="{{ (review.introduction or '')[:400] | e }}">
       <i class="bi bi-flag me-1"></i>Report
     </button>
   </div>

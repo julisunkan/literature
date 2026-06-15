@@ -111,6 +111,19 @@ async function installPWA() {
   deferredPrompt = null;
 }
 
+// Report content — delegated handler for all .report-btn buttons
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.report-btn');
+  if (!btn) return;
+  const contentType = btn.dataset.type || '';
+  const contentId   = btn.dataset.id   || '';
+  const contentTitle   = btn.dataset.title   || '';
+  const contentSnippet = btn.dataset.snippet || '';
+  if (typeof openReportModal === 'function') {
+    openReportModal(contentType, contentId, contentTitle, contentSnippet);
+  }
+});
+
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
