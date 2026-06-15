@@ -276,26 +276,30 @@ def search_all(query, sources=None, year_from=None, year_to=None, limit=10):
 
 def save_paper(paper_data):
     db = get_db()
-    existing = db.execute('SELECT id FROM papers WHERE doi=? AND doi != ""', (paper_data.get('doi', ''),)).fetchone()
-    if existing:
+    try:
+        existing = db.execute('SELECT id FROM papers WHERE doi=? AND doi != ""', (paper_data.get('doi', ''),)).fetchone()
+        if existing:
+            db.close()
+            return existing['id']
+        cur = db.execute('''
+            INSERT INTO papers (title, authors, abstract, year, doi, url, journal, citations_count, source, keywords)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            paper_data.get('title', ''), paper_data.get('authors', ''),
+            paper_data.get('abstract', ''), paper_data.get('year'),
+            paper_data.get('doi', ''), paper_data.get('url', ''),
+            paper_data.get('journal', ''), paper_data.get('citations_count', 0),
+            paper_data.get('source', ''), paper_data.get('keywords', '')
+        ))
+        paper_id = cur.lastrowid
+        db.execute('INSERT INTO activity_logs (action, details) VALUES (?, ?)',
+                   ('paper_saved', f"Saved paper: {paper_data.get('title', '')[:100]}"))
+        db.commit()
         db.close()
-        return existing['id']
-    cur = db.execute('''
-        INSERT INTO papers (title, authors, abstract, year, doi, url, journal, citations_count, source, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        paper_data.get('title', ''), paper_data.get('authors', ''),
-        paper_data.get('abstract', ''), paper_data.get('year'),
-        paper_data.get('doi', ''), paper_data.get('url', ''),
-        paper_data.get('journal', ''), paper_data.get('citations_count', 0),
-        paper_data.get('source', ''), paper_data.get('keywords', '')
-    ))
-    paper_id = cur.lastrowid
-    db.execute('INSERT INTO activity_logs (action, details) VALUES (?, ?)',
-               ('paper_saved', f"Saved paper: {paper_data.get('title', '')[:100]}"))
-    db.commit()
-    db.close()
-    return paper_id
+        return paper_id
+    except Exception as e:
+        db.close()
+        raise RuntimeError(f"Failed to save paper: {e}") from e
 
 def log_search_error(source, error):
     try:

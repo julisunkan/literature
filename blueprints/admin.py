@@ -275,12 +275,16 @@ def delete_backup(backup_id):
     db = get_db()
     backup = db.execute('SELECT * FROM backups WHERE id=?', (backup_id,)).fetchone()
     if backup:
-        try:
-            if os.path.exists(backup['file_path']):
+        file_deleted = True
+        if os.path.exists(backup['file_path']):
+            try:
                 os.remove(backup['file_path'])
-        except Exception:
-            pass
-        db.execute('DELETE FROM backups WHERE id=?', (backup_id,))
+            except Exception as e:
+                file_deleted = False
+                db.execute('INSERT INTO system_logs (level, source, message) VALUES (?, ?, ?)',
+                           ('WARN', 'admin:delete_backup', f"Could not delete file {backup['file_path']}: {e}"))
+        if file_deleted:
+            db.execute('DELETE FROM backups WHERE id=?', (backup_id,))
         db.commit()
         log_audit('backup_deleted', 'backups', backup_id)
     db.close()

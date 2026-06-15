@@ -149,7 +149,10 @@ def upload():
         import time
         unique_name = f"{int(time.time())}_{safe_name}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_name)
-        file.save(file_path)
+        try:
+            file.save(file_path)
+        except OSError as e:
+            return jsonify({'error': f'Could not save file: {e}'}), 500
         paper_id = request.form.get('paper_id', type=int)
         db = get_db()
         db.execute('INSERT INTO uploads (filename, original_name, file_size, status, paper_id) VALUES (?, ?, ?, ?, ?)',

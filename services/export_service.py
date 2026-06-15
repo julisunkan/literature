@@ -215,5 +215,12 @@ def _save_export_record(ref_id, filename, filepath, fmt):
                    ('export', 'Export Ready', f'{filename} is ready for download.'))
         db.commit()
         db.close()
-    except Exception:
-        pass
+    except Exception as e:
+        try:
+            db2 = get_db()
+            db2.execute('INSERT INTO system_logs (level, source, message) VALUES (?, ?, ?)',
+                        ('WARN', 'export_service:save_record', str(e)[:500]))
+            db2.commit()
+            db2.close()
+        except Exception:
+            pass
