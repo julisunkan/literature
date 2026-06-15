@@ -1,5 +1,16 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "B8Ac2KUr30RrsHr7DjD7A"
+uri = "file://static/icons/master-icon-512.png"
+type = "image"
+title = "litreview master icon"
+
+[[generated]]
+id = "PGdAlReT_-gvPElGCnhqR"
+uri = "file://static/icons/master-maskable-512.png"
+type = "image"
+title = "litreview maskable icon"
 
 [[outputs]]
 id = "8mvwitOA_pOSD8kr-4Y6L"
@@ -16,5 +27,17 @@ title = "App Icon (512×512)"
 [[outputs]]
 id = "Dz8xLNeYz35UrMnamvGk7"
 uri = "file://static/icons/maskable-icon-512x512.png"
+type = "image"
+title = "Maskable Icon (512×512)"
+
+[[outputs]]
+id = "fqackVyp8wH8XaUZY5BOs"
+uri = "file://static/icons/master-icon-512.png"
+type = "image"
+title = "Regular Icon (512×512)"
+
+[[outputs]]
+id = "DRk9qHck0unA2TL4I7FrZ"
+uri = "file://static/icons/master-maskable-512.png"
 type = "image"
 title = "Maskable Icon (512×512)"
