@@ -28,7 +28,7 @@
               <input type="checkbox" class="form-check-input mt-1 me-2 paper-checkbox" value="{{ paper.id }}" id="paper-{{ paper.id }}">
               <div class="flex-grow-1">
                 <div class="d-flex align-items-start justify-content-between gap-1">
-                  <div class="small fw-semibold">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
+                  <div class="small fw-semibold paper-title" data-raw-title="{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
                   <span class="score-badge flex-shrink-0" style="display:none;"></span>
                 </div>
                 <div class="text-muted" style="font-size:0.75rem;">{{ paper.authors[:40] if paper.authors else '' }} {% if paper.year %}({{ paper.year }}){% endif %}</div>
@@ -152,7 +152,8 @@ function updateContextWarning(count) {
 }
 
 function clearScoreBadges() {
-  document.querySelectorAll('.score-badge').forEach(b => { b.style.display = 'none'; b.textContent = ''; });
+  document.querySelectorAll('.score-badge').forEach(b => { b.style.display = 'none'; b.textContent = ''; b.removeAttribute('title'); });
+  document.querySelectorAll('.paper-title').forEach(el => { el.innerHTML = el.dataset.rawTitle; });
   document.querySelectorAll('.paper-item').forEach(i => i.classList.remove('smart-selected'));
   const fb = document.getElementById('smartSelectFeedback');
   if (fb) fb.style.display = 'none';
@@ -250,6 +251,18 @@ function smartSelect() {
       if (recencyBonus) parts.push(`+${recencyBonus} recency bonus (${item.dataset.year})`);
       badge.title = parts.join('\n');
     }
+  });
+
+  scored.forEach(({ item, matches }) => {
+    const titleEl = item.querySelector('.paper-title');
+    if (!titleEl || !matches.length) return;
+    let html = titleEl.dataset.rawTitle;
+    matches.forEach(({ kw }) => {
+      const safe = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      html = html.replace(new RegExp(`(${safe})`, 'gi'),
+        '<mark class="kw-hl">$1</mark>');
+    });
+    titleEl.innerHTML = html;
   });
 
   scored.slice(0, topN).forEach(({ item, checkbox }) => {
@@ -386,5 +399,12 @@ function showError(msg) {
 <style>
 .smart-selected { background: #eff6ff !important; border-left: 3px solid #3b82f6 !important; }
 .smart-selected .fw-semibold { color: #1d4ed8; }
+mark.kw-hl {
+  background: #fef08a;
+  color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+  font-weight: inherit;
+}
 </style>
 {% endblock %}
