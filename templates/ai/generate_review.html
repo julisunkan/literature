@@ -21,7 +21,10 @@
           {% if papers %}
           <div id="paperList" style="max-height:300px;overflow-y:auto;" class="border rounded">
             {% for paper in papers %}
-            <label class="d-flex align-items-start p-2 border-bottom cursor-pointer paper-item" style="cursor:pointer;">
+            <label class="d-flex align-items-start p-2 border-bottom cursor-pointer paper-item" style="cursor:pointer;"
+              data-title="{{ (paper.title or '')|lower }}"
+              data-abstract="{{ ((paper.abstract or '')[:300])|lower }}"
+              data-year="{{ paper.year or 0 }}">
               <input type="checkbox" class="form-check-input mt-1 me-2 paper-checkbox" value="{{ paper.id }}" id="paper-{{ paper.id }}">
               <div class="flex-grow-1">
                 <div class="small fw-semibold">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
@@ -30,11 +33,15 @@
             </label>
             {% endfor %}
           </div>
-          <div class="d-flex gap-2 mt-2 align-items-center">
+          <div class="d-flex gap-2 mt-2 align-items-center flex-wrap">
             <button class="btn btn-xs btn-outline-secondary" onclick="selectAll()">Select All</button>
             <button class="btn btn-xs btn-outline-secondary" onclick="selectNone()">Clear</button>
+            <button class="btn btn-xs btn-primary" id="smartSelectBtn" onclick="smartSelect()" title="Auto-select the most relevant papers for your topic">
+              <i class="bi bi-magic me-1"></i>Smart Select
+            </button>
             <span class="text-muted small ms-auto" id="selectedCount">0 selected</span>
           </div>
+          <div id="smartSelectFeedback" class="mt-2" style="display:none;"></div>
           <div id="contextWarning" class="mt-2" style="display:none;"></div>
           {% else %}
           <div class="alert alert-info small">
@@ -144,6 +151,91 @@ function updateContextWarning(count) {
 function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); updateCount(); }
 function selectNone() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = false; }); updateCount(); }
 
+const STOPWORDS = new Set(['the','a','an','and','or','of','in','on','to','for','with','by','is','are',
+  'was','were','that','this','it','as','at','be','from','has','have','had','not','but','its',
+  'their','which','when','about','into','through','during','between','such','each','other']);
+
+function extractKeywords(text) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !STOPWORDS.has(w));
+}
+
+function scorePaper(item, keywords) {
+  if (!keywords.length) return 0;
+  const title = item.dataset.title || '';
+  const abstract = item.dataset.abstract || '';
+  const year = parseInt(item.dataset.year) || 0;
+
+  let score = 0;
+  for (const kw of keywords) {
+    const titleMatches = (title.match(new RegExp(kw, 'g')) || []).length;
+    const abstractMatches = (abstract.match(new RegExp(kw, 'g')) || []).length;
+    score += titleMatches * 3 + abstractMatches * 1;
+  }
+
+  const recencyBonus = year >= 2020 ? 2 : year >= 2015 ? 1 : 0;
+  return score + recencyBonus;
+}
+
+function smartSelect() {
+  const topic = document.getElementById('reviewTopic').value.trim();
+  const feedback = document.getElementById('smartSelectFeedback');
+  const fullFit = Math.floor(BUDGET / AVG_ENTRY_CHARS);
+
+  if (!topic) {
+    feedback.style.display = '';
+    feedback.innerHTML = `<div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#eff6ff;border:1px solid #bfdbfe;">
+      <i class="bi bi-info-circle-fill text-primary"></i>
+      <span class="small text-primary">Type a research topic first, then click Smart Select.</span>
+    </div>`;
+    document.getElementById('reviewTopic').focus();
+    return;
+  }
+
+  const keywords = extractKeywords(topic);
+  const items = Array.from(document.querySelectorAll('.paper-item'));
+
+  const scored = items.map(item => ({
+    item,
+    checkbox: item.querySelector('.paper-checkbox'),
+    score: scorePaper(item, keywords)
+  })).sort((a, b) => b.score - a.score);
+
+  const topN = Math.min(fullFit, scored.length);
+  const hasAnyMatch = scored[0].score > 0;
+
+  items.forEach(item => item.querySelector('.paper-checkbox').checked = false);
+  items.forEach(item => item.classList.remove('smart-selected'));
+
+  scored.slice(0, topN).forEach(({ item, checkbox }) => {
+    checkbox.checked = true;
+    item.classList.add('smart-selected');
+  });
+
+  updateCount();
+
+  const list = document.getElementById('paperList');
+  list.scrollTop = 0;
+
+  feedback.style.display = '';
+  if (!hasAnyMatch) {
+    feedback.innerHTML = `<div class="d-flex align-items-start gap-2 p-2 rounded" style="background:#fffbeb;border:1px solid #fde68a;">
+      <i class="bi bi-exclamation-triangle-fill text-warning mt-1 flex-shrink-0"></i>
+      <div class="small"><span class="fw-semibold text-warning-emphasis">No strong keyword matches found.</span>
+      Selected the ${topN} most recent papers instead. Refine your topic for better results.</div>
+    </div>`;
+  } else {
+    const matchedCount = scored.filter(s => s.score > 0).length;
+    feedback.innerHTML = `<div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+      <i class="bi bi-magic text-success"></i>
+      <span class="small text-success"><strong>${topN} papers selected</strong> from ${matchedCount} keyword match${matchedCount !== 1 ? 'es' : ''}.
+      Highlighted in the list below.</span>
+    </div>`;
+  }
+}
+
 function filterPapers(query) {
   document.querySelectorAll('.paper-item').forEach(item => {
     item.style.display = item.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
@@ -248,4 +340,8 @@ function showError(msg) {
   document.getElementById('generateError').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${msg}</div>`;
 }
 </script>
+<style>
+.smart-selected { background: #eff6ff !important; border-left: 3px solid #3b82f6 !important; }
+.smart-selected .fw-semibold { color: #1d4ed8; }
+</style>
 {% endblock %}

@@ -20,7 +20,7 @@ def get_notifications():
 def generate_review():
     site = get_site_settings()
     db = get_db()
-    papers_list = db.execute('SELECT id, title, authors, year FROM papers ORDER BY created_at DESC').fetchall()
+    papers_list = db.execute('SELECT id, title, authors, year, abstract FROM papers ORDER BY created_at DESC').fetchall()
     db.close()
     return render_template('ai/generate_review.html', site=site, papers=papers_list,
                            notifications=get_notifications())
