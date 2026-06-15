@@ -302,7 +302,8 @@ def _seed_defaults(c):
                   (name, enabled, desc))
 
     ai_models_defaults = [
-        ('groq', 'llama3-70b-8192', 'Llama 3 70B (Groq)', 1),
+        ('groq', 'llama-3.3-70b-versatile', 'Llama 3.3 70B Versatile (Groq)', 1),
+        ('groq', 'llama-3.1-8b-instant', 'Llama 3.1 8B Instant (Groq)', 0),
         ('groq', 'llama3-8b-8192', 'Llama 3 8B (Groq)', 0),
         ('groq', 'mixtral-8x7b-32768', 'Mixtral 8x7B (Groq)', 0),
         ('groq', 'deepseek-r1-distill-llama-70b', 'DeepSeek R1 (Groq)', 0),

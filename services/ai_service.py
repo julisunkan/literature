@@ -11,7 +11,7 @@ def get_ai_settings():
         settings[r['name']] = {'value': r['key_value'], 'enabled': r['is_enabled']}
     model_row = db.execute('SELECT model_id, provider FROM ai_models WHERE is_default=1 LIMIT 1').fetchone()
     db.close()
-    settings['default_model'] = model_row['model_id'] if model_row else 'llama3-70b-8192'
+    settings['default_model'] = model_row['model_id'] if model_row else 'llama-3.3-70b-versatile'
     settings['default_provider'] = model_row['provider'] if model_row else 'groq'
     return settings
 
@@ -38,7 +38,7 @@ def call_groq(prompt, system_msg='You are a helpful academic research assistant.
         raise ValueError('Groq API key not configured. Please add it in Admin > API Management.')
 
     settings = get_ai_settings()
-    use_model = model or settings.get('default_model', 'llama3-70b-8192')
+    use_model = model or settings.get('default_model', 'llama-3.3-70b-versatile')
 
     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
     payload = {
@@ -119,7 +119,7 @@ def call_ai(prompt, system_msg='You are a helpful academic research assistant.',
         if fb not in providers_order:
             providers_order.append(fb)
 
-    last_error = None
+    errors = {}
     for p in providers_order:
         try:
             if p == 'groq':
@@ -135,11 +135,12 @@ def call_ai(prompt, system_msg='You are a helpful academic research assistant.',
             log_ai_request(p, settings.get('default_model', ''), prompt_type, 'success')
             return result
         except Exception as e:
-            last_error = e
+            errors[p] = str(e)
             log_ai_request(p, '', prompt_type, 'error', str(e))
             continue
 
-    raise Exception(f'All AI providers failed. Last error: {last_error}')
+    lines = [f'  • {p}: {msg}' for p, msg in errors.items()]
+    raise Exception('All AI providers failed:\n' + '\n'.join(lines))
 
 def generate_literature_review(topic, papers):
     template = get_prompt('literature_review')

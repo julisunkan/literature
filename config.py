@@ -13,7 +13,7 @@ class Config:
     OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 
     DEFAULT_AI_PROVIDER = 'groq'
-    DEFAULT_GROQ_MODEL = 'llama3-70b-8192'
+    DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile'
 
     OPENALEX_BASE = 'https://api.openalex.org'
     SEMANTIC_SCHOLAR_BASE = 'https://api.semanticscholar.org/graph/v1'
