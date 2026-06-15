@@ -3,6 +3,19 @@ import json
 import requests
 from models import get_db
 
+MAX_PROMPT_CHARS = 24000
+
+def truncate_prompt(prompt, limit=MAX_PROMPT_CHARS):
+    if len(prompt) <= limit:
+        return prompt
+    keep = limit - 200
+    half = keep // 2
+    return (
+        prompt[:half]
+        + f'\n\n[... {len(prompt) - keep} characters truncated to fit context window ...]\n\n'
+        + prompt[-half:]
+    )
+
 def get_ai_settings():
     db = get_db()
     settings = {}
@@ -40,6 +53,7 @@ def call_groq(prompt, system_msg='You are a helpful academic research assistant.
     settings = get_ai_settings()
     use_model = model or settings.get('default_model', 'llama-3.3-70b-versatile')
 
+    prompt = truncate_prompt(prompt)
     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
     payload = {
         'model': use_model,
@@ -65,6 +79,7 @@ def call_openrouter(prompt, system_msg='You are a helpful academic research assi
     if not api_key:
         raise ValueError('OpenRouter API key not configured.')
 
+    prompt = truncate_prompt(prompt)
     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json',
                'HTTP-Referer': 'https://litreview.app', 'X-Title': 'LitReview'}
     payload = {
@@ -89,6 +104,7 @@ def call_gemini(prompt):
     if not api_key:
         raise ValueError('Gemini API key not configured.')
 
+    prompt = truncate_prompt(prompt)
     url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}'
     payload = {'contents': [{'parts': [{'text': prompt}]}]}
     resp = requests.post(url, json=payload, timeout=60)
