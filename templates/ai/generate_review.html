@@ -173,20 +173,28 @@ function extractKeywords(text) {
 }
 
 function scorePaper(item, keywords) {
-  if (!keywords.length) return 0;
+  if (!keywords.length) return { score: 0, matches: [] };
   const title = item.dataset.title || '';
   const abstract = item.dataset.abstract || '';
   const year = parseInt(item.dataset.year) || 0;
 
   let score = 0;
+  const matches = [];
   for (const kw of keywords) {
     const titleMatches = (title.match(new RegExp(kw, 'g')) || []).length;
     const abstractMatches = (abstract.match(new RegExp(kw, 'g')) || []).length;
-    score += titleMatches * 3 + abstractMatches * 1;
+    const kwScore = titleMatches * 3 + abstractMatches * 1;
+    if (kwScore > 0) {
+      const where = [];
+      if (titleMatches) where.push(titleMatches > 1 ? `title ×${titleMatches}` : 'title');
+      if (abstractMatches) where.push(abstractMatches > 1 ? `abstract ×${abstractMatches}` : 'abstract');
+      matches.push({ kw, where });
+    }
+    score += kwScore;
   }
 
   const recencyBonus = year >= 2020 ? 2 : year >= 2015 ? 1 : 0;
-  return score + recencyBonus;
+  return { score: score + recencyBonus, matches, recencyBonus };
 }
 
 function smartSelect() {
@@ -207,11 +215,10 @@ function smartSelect() {
   const keywords = extractKeywords(topic);
   const items = Array.from(document.querySelectorAll('.paper-item'));
 
-  const scored = items.map(item => ({
-    item,
-    checkbox: item.querySelector('.paper-checkbox'),
-    score: scorePaper(item, keywords)
-  })).sort((a, b) => b.score - a.score);
+  const scored = items.map(item => {
+    const { score, matches, recencyBonus } = scorePaper(item, keywords);
+    return { item, checkbox: item.querySelector('.paper-checkbox'), score, matches, recencyBonus };
+  }).sort((a, b) => b.score - a.score);
 
   const topN = Math.min(fullFit, scored.length);
   const hasAnyMatch = scored[0].score > 0;
@@ -223,19 +230,25 @@ function smartSelect() {
     item.classList.remove('smart-selected');
   });
 
-  scored.forEach(({ item, score }) => {
+  scored.forEach(({ item, score, matches, recencyBonus }) => {
     const badge = item.querySelector('.score-badge');
     if (!badge) return;
     if (score === 0) {
       badge.style.display = 'none';
       badge.textContent = '';
+      badge.removeAttribute('title');
     } else {
       const pct = score / maxScore;
       const [bg, color] = pct >= 0.7 ? ['#dcfce7','#15803d']
                         : pct >= 0.35 ? ['#fef9c3','#854d0e']
                         : ['#f1f5f9','#64748b'];
-      badge.style.cssText = `display:inline-block;font-size:0.65rem;padding:1px 5px;border-radius:9px;font-weight:600;background:${bg};color:${color};white-space:nowrap;`;
+      badge.style.cssText = `display:inline-block;font-size:0.65rem;padding:1px 5px;border-radius:9px;font-weight:600;background:${bg};color:${color};white-space:nowrap;cursor:help;`;
       badge.textContent = `★ ${score}`;
+
+      const kwLines = matches.map(m => `"${m.kw}" in ${m.where.join(' + ')}`);
+      const parts = ['Matched keywords:'].concat(kwLines);
+      if (recencyBonus) parts.push(`+${recencyBonus} recency bonus (${item.dataset.year})`);
+      badge.title = parts.join('\n');
     }
   });
 
