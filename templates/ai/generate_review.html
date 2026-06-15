@@ -27,7 +27,10 @@
               data-year="{{ paper.year or 0 }}">
               <input type="checkbox" class="form-check-input mt-1 me-2 paper-checkbox" value="{{ paper.id }}" id="paper-{{ paper.id }}">
               <div class="flex-grow-1">
-                <div class="small fw-semibold">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
+                <div class="d-flex align-items-start justify-content-between gap-1">
+                  <div class="small fw-semibold">{{ paper.title[:70] }}{% if paper.title|length > 70 %}...{% endif %}</div>
+                  <span class="score-badge flex-shrink-0" style="display:none;"></span>
+                </div>
                 <div class="text-muted" style="font-size:0.75rem;">{{ paper.authors[:40] if paper.authors else '' }} {% if paper.year %}({{ paper.year }}){% endif %}</div>
               </div>
             </label>
@@ -148,8 +151,15 @@ function updateContextWarning(count) {
   }
 }
 
-function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); updateCount(); }
-function selectNone() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = false; }); updateCount(); }
+function clearScoreBadges() {
+  document.querySelectorAll('.score-badge').forEach(b => { b.style.display = 'none'; b.textContent = ''; });
+  document.querySelectorAll('.paper-item').forEach(i => i.classList.remove('smart-selected'));
+  const fb = document.getElementById('smartSelectFeedback');
+  if (fb) fb.style.display = 'none';
+}
+
+function selectAll() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = true; }); clearScoreBadges(); updateCount(); }
+function selectNone() { document.querySelectorAll('.paper-checkbox').forEach(cb => { cb.checked = false; }); clearScoreBadges(); updateCount(); }
 
 const STOPWORDS = new Set(['the','a','an','and','or','of','in','on','to','for','with','by','is','are',
   'was','were','that','this','it','as','at','be','from','has','have','had','not','but','its',
@@ -206,8 +216,28 @@ function smartSelect() {
   const topN = Math.min(fullFit, scored.length);
   const hasAnyMatch = scored[0].score > 0;
 
-  items.forEach(item => item.querySelector('.paper-checkbox').checked = false);
-  items.forEach(item => item.classList.remove('smart-selected'));
+  const maxScore = scored[0].score || 1;
+
+  items.forEach(item => {
+    item.querySelector('.paper-checkbox').checked = false;
+    item.classList.remove('smart-selected');
+  });
+
+  scored.forEach(({ item, score }) => {
+    const badge = item.querySelector('.score-badge');
+    if (!badge) return;
+    if (score === 0) {
+      badge.style.display = 'none';
+      badge.textContent = '';
+    } else {
+      const pct = score / maxScore;
+      const [bg, color] = pct >= 0.7 ? ['#dcfce7','#15803d']
+                        : pct >= 0.35 ? ['#fef9c3','#854d0e']
+                        : ['#f1f5f9','#64748b'];
+      badge.style.cssText = `display:inline-block;font-size:0.65rem;padding:1px 5px;border-radius:9px;font-weight:600;background:${bg};color:${color};white-space:nowrap;`;
+      badge.textContent = `★ ${score}`;
+    }
+  });
 
   scored.slice(0, topN).forEach(({ item, checkbox }) => {
     checkbox.checked = true;
