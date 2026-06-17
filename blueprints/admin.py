@@ -366,9 +366,9 @@ def delete_reported_content(report_id):
 
 @admin_bp.route('/api/cleanup/run', methods=['POST'])
 def run_cleanup():
-    from services.cleanup_service import run_cleanup as _run_cleanup
+    from services.cleanup_service import run_force_cleanup
     try:
-        _run_cleanup()
+        run_force_cleanup()
         db = get_db()
         last = db.execute(
             "SELECT message, details FROM system_logs WHERE source='cleanup' ORDER BY created_at DESC LIMIT 1"

@@ -18,6 +18,20 @@ def cleanup_old_files(folder, max_age_seconds=86400):
                 pass
     return deleted
 
+def force_cleanup_all_files(folder):
+    deleted = 0
+    if not os.path.isdir(folder):
+        return deleted
+    for filename in os.listdir(folder):
+        filepath = os.path.join(folder, filename)
+        if os.path.isfile(filepath):
+            try:
+                os.remove(filepath)
+                deleted += 1
+            except Exception:
+                pass
+    return deleted
+
 def run_cleanup():
     from models import get_db
     uploads_deleted = cleanup_old_files(Config.UPLOAD_FOLDER)
@@ -31,6 +45,27 @@ def run_cleanup():
                 'INFO',
                 'cleanup',
                 f'Auto-cleanup removed {total} file(s) older than 24 hours',
+                f'uploads: {uploads_deleted} file(s) deleted, exports: {exports_deleted} file(s) deleted',
+            ),
+        )
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
+def run_force_cleanup():
+    from models import get_db
+    uploads_deleted = force_cleanup_all_files(Config.UPLOAD_FOLDER)
+    exports_deleted = force_cleanup_all_files('exports')
+    total = uploads_deleted + exports_deleted
+    try:
+        db = get_db()
+        db.execute(
+            'INSERT INTO system_logs (level, source, message, details) VALUES (?, ?, ?, ?)',
+            (
+                'INFO',
+                'cleanup',
+                f'Manual cleanup removed {total} file(s)',
                 f'uploads: {uploads_deleted} file(s) deleted, exports: {exports_deleted} file(s) deleted',
             ),
         )
