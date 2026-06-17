@@ -64,8 +64,9 @@ def api_generate_review():
                 sections = {}
                 try:
                     sections = json.loads(fr['sections'] or '{}')
-                except Exception:
-                    pass
+                except Exception as e:
+                    import sys
+                    print(f'[ai_features] failed to parse sections JSON for file {fr["id"]}: {e}', file=sys.stderr)
                 title = fr['original_name'] or fr['filename'] or f'Uploaded file #{fr["id"]}'
                 abstract = sections.get('abstract', '') or ''
                 papers_data.append({
@@ -90,6 +91,8 @@ def api_generate_review():
              parts.get('conclusion', ''), json.dumps(paper_ids), 'completed',
              len(result.split())))
         review_id = cur.lastrowid
+        db.execute('''INSERT INTO review_versions (review_id, version_number, content)
+                      VALUES (?, ?, ?)''', (review_id, 1, result))
         db.execute('INSERT INTO notifications (type, title, message) VALUES (?, ?, ?)',
                    ('review', 'Review Generated', f'Literature review for "{topic}" is ready.'))
         db.execute('INSERT INTO activity_logs (action, details) VALUES (?, ?)',
@@ -206,10 +209,15 @@ def api_chat():
         if paper_ids:
             db = get_db()
             placeholders = ','.join('?' * len(paper_ids))
-            papers = db.execute(f'SELECT title, abstract, full_text FROM papers WHERE id IN ({placeholders})', paper_ids).fetchall()
+            papers = db.execute(f'''
+                SELECT p.title, p.abstract,
+                       (SELECT extracted_text FROM paper_files
+                        WHERE paper_id=p.id ORDER BY id DESC LIMIT 1) AS extracted_text
+                FROM papers p WHERE p.id IN ({placeholders})
+            ''', paper_ids).fetchall()
             db.close()
             context = '\n\n'.join([
-                f"Title: {p['title']}\nAbstract: {p['abstract'] or ''}\n{(p['full_text'] or '')[:500]}"
+                f"Title: {p['title']}\nAbstract: {p['abstract'] or ''}\n{(p['extracted_text'] or '')[:500]}"
                 for p in papers
             ])
 

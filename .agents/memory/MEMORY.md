@@ -1,1 +1,2 @@
 - [LitReview Project Structure](litreview-structure.md) — Flask PWA with blueprints, SQLite, Groq AI, 5 academic APIs; admin at /julisunkan (no auth)
+- [Cleanup Service](cleanup-service.md) — File cleanup logic lives in services/cleanup_service.py (not app.py) to avoid circular imports; both app.py scheduler and admin blueprint import from there

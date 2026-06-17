@@ -1,154 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard — {{ site.get('site_name','LitReview') }}</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link href="/static/css/style.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<div class="d-flex">
-  <!-- Admin Sidebar -->
-  <nav id="adminSidebar" style="width:240px;min-height:100vh;background:#1e293b;" class="d-flex flex-column">
-    <div class="p-3 border-bottom border-secondary">
-      <a href="/julisunkan" class="text-decoration-none">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-shield-check text-primary fs-4"></i>
-          <div>
-            <div class="text-white fw-bold small">Admin Panel</div>
-            <div class="text-secondary" style="font-size:0.7rem;">{{ site.get('site_name','LitReview') }}</div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="p-2 flex-grow-1">
-      {% set admin_links = [
-        ('dashboard', 'speedometer2', 'Dashboard'),
-        ('settings', 'gear', 'Site Settings'),
-        ('api_management', 'key', 'API Management'),
-        ('prompts', 'chat-text', 'Prompt Templates'),
-        ('features', 'toggles', 'Feature Toggles'),
-        ('pwa_settings', 'phone', 'PWA Settings'),
-        ('logs', 'journal-text', 'System Logs'),
-        ('backup', 'database', 'Backup & Restore'),
-      ] %}
-      {% for endpoint, icon, label in admin_links %}
-      <a href="/julisunkan/{% if endpoint != 'dashboard' %}{{ endpoint.replace('_','-') }}{% endif %}"
-         class="d-flex align-items-center gap-2 p-2 rounded mb-1 text-decoration-none {% if request.endpoint == 'admin.' + endpoint %}bg-primary text-white{% else %}text-secondary admin-nav-link{% endif %}">
-        <i class="bi bi-{{ icon }}"></i><span class="small">{{ label }}</span>
-      </a>
+{% extends "admin/base.html" %}
+{% block admin_title %}Admin Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0">Admin Dashboard</h4>
+  <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ site.get('site_name','LitReview') }}</span>
+</div>
+
+{% if not any_ai_configured %}
+<div class="alert alert-danger d-flex align-items-start gap-3 mb-4" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-4 mt-1 flex-shrink-0"></i>
+  <div>
+    <div class="fw-semibold mb-1">No AI providers are configured — AI features will not work.</div>
+    <div class="small mb-2">Add at least one API key to enable literature review generation, summarisation, and other AI features. Groq has a free tier and is recommended.</div>
+    <a href="/julisunkan/api-management" class="btn btn-sm btn-danger"><i class="bi bi-key me-1"></i>Configure API Keys</a>
+  </div>
+</div>
+{% else %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-robot text-primary"></i>
+    <h6 class="mb-0 fw-semibold">AI Provider Status</h6>
+    <a href="/julisunkan/api-management" class="btn btn-sm btn-outline-secondary ms-auto">Manage Keys</a>
+  </div>
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2">
+      {% for p in ai_provider_status %}
+      <span class="badge rounded-pill px-3 py-2 {% if p.ok %}bg-success-subtle text-success border border-success{% else %}bg-secondary-subtle text-secondary border{% endif %}" style="font-size:0.8rem;">
+        <i class="bi bi-{% if p.ok %}check-circle-fill{% else %}dash-circle{% endif %} me-1"></i>{{ p.name }}
+      </span>
       {% endfor %}
     </div>
-    <div class="p-3 border-top border-secondary">
-      <a href="/" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-arrow-left me-1"></i>Back to App</a>
-    </div>
-  </nav>
+  </div>
+</div>
+{% endif %}
 
-  <!-- Main Content -->
-  <div class="flex-grow-1 p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h4 class="fw-bold mb-0">Admin Dashboard</h4>
-      <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ site.get('site_name','LitReview') }}</span>
-    </div>
-
-    <!-- AI Provider Health Banner -->
-    {% if not any_ai_configured %}
-    <div class="alert alert-danger d-flex align-items-start gap-3 mb-4" role="alert">
-      <i class="bi bi-exclamation-triangle-fill fs-4 mt-1 flex-shrink-0"></i>
-      <div>
-        <div class="fw-semibold mb-1">No AI providers are configured — AI features will not work.</div>
-        <div class="small mb-2">Add at least one API key to enable literature review generation, summarisation, and other AI features. Groq has a free tier and is recommended.</div>
-        <a href="/julisunkan/api-management" class="btn btn-sm btn-danger"><i class="bi bi-key me-1"></i>Configure API Keys</a>
+<div class="row g-3 mb-4">
+  {% for label, val, icon, color in [
+    ('Total Papers', stats.papers, 'journals', 'primary'),
+    ('Reviews Generated', stats.reviews, 'file-earmark-text', 'success'),
+    ('PDF Uploads', stats.uploads, 'cloud-upload', 'warning'),
+    ('AI Requests', stats.ai_requests, 'stars', 'info'),
+    ('Errors', stats.errors, 'exclamation-triangle', 'danger'),
+    ('Chat Sessions', stats.chat_sessions, 'chat-dots', 'secondary'),
+  ] %}
+  <div class="col-6 col-xl-2">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-{{ icon }} text-{{ color }} fs-4"></i>
+        <div class="fw-bold fs-5 mt-1">{{ val }}</div>
+        <div class="text-muted" style="font-size:0.75rem;">{{ label }}</div>
       </div>
     </div>
-    {% else %}
-    <div class="card mb-4">
-      <div class="card-header d-flex align-items-center gap-2">
-        <i class="bi bi-robot text-primary"></i>
-        <h6 class="mb-0 fw-semibold">AI Provider Status</h6>
-        <a href="/julisunkan/api-management" class="btn btn-sm btn-outline-secondary ms-auto">Manage Keys</a>
-      </div>
-      <div class="card-body py-2">
-        <div class="d-flex flex-wrap gap-2">
-          {% for p in ai_provider_status %}
-          <span class="badge rounded-pill px-3 py-2 {% if p.ok %}bg-success-subtle text-success border border-success{% else %}bg-secondary-subtle text-secondary border{% endif %}" style="font-size:0.8rem;">
-            <i class="bi bi-{% if p.ok %}check-circle-fill{% else %}dash-circle{% endif %} me-1"></i>{{ p.name }}
-          </span>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
+  </div>
+  {% endfor %}
+</div>
 
-    <!-- Stats -->
-    <div class="row g-3 mb-4">
-      {% for label, val, icon, color in [
-        ('Total Papers', stats.papers, 'journals', 'primary'),
-        ('Reviews Generated', stats.reviews, 'file-earmark-text', 'success'),
-        ('PDF Uploads', stats.uploads, 'cloud-upload', 'warning'),
-        ('AI Requests', stats.ai_requests, 'stars', 'info'),
-        ('Errors', stats.errors, 'exclamation-triangle', 'danger'),
-        ('Chat Sessions', stats.chat_sessions, 'chat-dots', 'secondary'),
-      ] %}
-      <div class="col-6 col-xl-2">
-        <div class="card text-center">
-          <div class="card-body py-3">
-            <i class="bi bi-{{ icon }} text-{{ color }} fs-4"></i>
-            <div class="fw-bold fs-5 mt-1">{{ val }}</div>
-            <div class="text-muted" style="font-size:0.75rem;">{{ label }}</div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-journal-text me-2"></i>Recent System Logs</h6></div>
-          <div class="list-group list-group-flush">
-            {% for log in recent_logs %}
-            <div class="list-group-item py-2">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <span class="badge bg-{% if log.level=='ERROR' %}danger{% elif log.level=='WARNING' %}warning{% else %}secondary{% endif %} me-2">{{ log.level }}</span>
-                  <span class="small">{{ log.source }}</span>
-                  <div class="text-muted small mt-1">{{ log.message[:80] }}</div>
-                </div>
-                <span class="text-muted" style="font-size:0.7rem;">{{ log.created_at[11:16] }}</span>
-              </div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-journal-text me-2"></i>Recent System Logs</h6></div>
+      <div class="list-group list-group-flush">
+        {% for log in recent_logs %}
+        <div class="list-group-item py-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <span class="badge bg-{% if log.level=='ERROR' %}danger{% elif log.level=='WARNING' %}warning{% else %}secondary{% endif %} me-2">{{ log.level }}</span>
+              <span class="small">{{ log.source }}</span>
+              <div class="text-muted small mt-1">{{ log.message[:80] }}</div>
             </div>
-            {% else %}
-            <div class="list-group-item text-muted small text-center py-3">No logs yet</div>
-            {% endfor %}
+            <span class="text-muted" style="font-size:0.7rem;">{{ log.created_at[11:16] }}</span>
           </div>
         </div>
+        {% else %}
+        <div class="list-group-item text-muted small text-center py-3">No logs yet</div>
+        {% endfor %}
       </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-activity me-2"></i>Recent Activity</h6></div>
-          <div class="list-group list-group-flush">
-            {% for activity in recent_activity %}
-            <div class="list-group-item py-2">
-              <div class="d-flex justify-content-between">
-                <div><span class="badge bg-light text-dark border me-2">{{ activity.action }}</span><span class="small text-muted">{{ activity.details[:60] }}</span></div>
-                <span class="text-muted" style="font-size:0.7rem;">{{ activity.created_at[11:16] }}</span>
-              </div>
-            </div>
-            {% else %}
-            <div class="list-group-item text-muted small text-center py-3">No activity yet</div>
-            {% endfor %}
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><h6 class="mb-0 fw-semibold"><i class="bi bi-activity me-2"></i>Recent Activity</h6></div>
+      <div class="list-group list-group-flush">
+        {% for activity in recent_activity %}
+        <div class="list-group-item py-2">
+          <div class="d-flex justify-content-between">
+            <div><span class="badge bg-light text-dark border me-2">{{ activity.action }}</span><span class="small text-muted">{{ activity.details[:60] }}</span></div>
+            <span class="text-muted" style="font-size:0.7rem;">{{ activity.created_at[11:16] }}</span>
           </div>
         </div>
+        {% else %}
+        <div class="list-group-item text-muted small text-center py-3">No activity yet</div>
+        {% endfor %}
       </div>
     </div>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<style>
-.admin-nav-link:hover { background: rgba(255,255,255,0.1); color: white !important; }
-</style>
-</body>
-</html>
+{% endblock %}

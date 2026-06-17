@@ -82,14 +82,6 @@ async function saveApi(id, name, providerType) {
   adminToast(data.success ? 'API key saved!' : data.error || 'Error', data.success ? 'success' : 'danger');
 }
 
-async function toggleApi(id, name, enabled) {
-  await fetch('/julisunkan/api/api-settings', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({name, enabled: enabled ? 1 : 0})
-  });
-  adminToast(enabled ? 'API enabled' : 'API disabled');
-}
-
 async function testApi(name) {
   adminToast('Testing connection...', 'secondary');
   const res = await fetch('/julisunkan/api/test-api', {

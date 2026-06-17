@@ -19,8 +19,9 @@ def log_audit(action, entity_type='', entity_id='', old_val='', new_val=''):
                    (action, entity_type, str(entity_id), str(old_val)[:500], str(new_val)[:500], ip))
         db.commit()
         db.close()
-    except Exception:
-        pass
+    except Exception as e:
+        import sys
+        print(f'[log_audit] failed to write audit log: {e}', file=sys.stderr)
 
 @admin_bp.route('/')
 def dashboard():
@@ -337,6 +338,17 @@ def delete_reported_content(report_id):
     deleted = False
     try:
         if content_type == 'review' and content_id:
+            export_files = db.execute(
+                "SELECT file_path FROM exports WHERE type='review' AND file_path IS NOT NULL"
+            ).fetchall()
+            for ef in export_files:
+                try:
+                    if ef['file_path'] and os.path.exists(ef['file_path']):
+                        os.remove(ef['file_path'])
+                except Exception:
+                    pass
+            db.execute('DELETE FROM exports WHERE type=?', ('review',))
+            db.execute('DELETE FROM review_versions WHERE review_id=?', (content_id,))
             db.execute('DELETE FROM literature_reviews WHERE id=?', (content_id,))
             deleted = True
         elif content_type == 'chat' and content_id:
@@ -354,7 +366,7 @@ def delete_reported_content(report_id):
 
 @admin_bp.route('/api/cleanup/run', methods=['POST'])
 def run_cleanup():
-    from app import _run_cleanup
+    from services.cleanup_service import run_cleanup as _run_cleanup
     try:
         _run_cleanup()
         db = get_db()

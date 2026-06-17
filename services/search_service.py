@@ -308,5 +308,6 @@ def log_search_error(source, error):
                    ('ERROR', f'search:{source}', error[:500]))
         db.commit()
         db.close()
-    except Exception:
-        pass
+    except Exception as db_err:
+        import sys
+        print(f'[log_search_error] could not write to DB: {db_err}', file=sys.stderr)

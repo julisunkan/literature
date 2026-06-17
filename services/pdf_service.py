@@ -4,13 +4,23 @@ import json
 from models import get_db
 from config import Config
 
+def _log_pdf_error(source, error):
+    try:
+        db = get_db()
+        db.execute('INSERT INTO system_logs (level, source, message) VALUES (?, ?, ?)',
+                   ('WARN', f'pdf:{source}', error[:500]))
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
 def extract_text_from_pdf(file_path):
     text = ''
     try:
         from pdfminer.high_level import extract_text as pdfminer_extract
         text = pdfminer_extract(file_path)
-    except Exception:
-        pass
+    except Exception as e:
+        _log_pdf_error('pdfminer', str(e))
 
     if not text or len(text.strip()) < 100:
         try:
@@ -19,8 +29,8 @@ def extract_text_from_pdf(file_path):
                 reader = PyPDF2.PdfReader(f)
                 for page in reader.pages:
                     text += page.extract_text() or ''
-        except Exception:
-            pass
+        except Exception as e:
+            _log_pdf_error('pypdf2', str(e))
 
     if not text or len(text.strip()) < 50:
         text = ocr_pdf(file_path)
@@ -100,16 +110,6 @@ def process_upload(file_path, original_name, paper_id=None):
                    ('pdf_processed', f'Processed: {original_name}'))
         db.commit()
         db.close()
-
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            db2 = get_db()
-            db2.execute('UPDATE paper_files SET file_path=NULL WHERE id=?', (file_id,))
-            db2.commit()
-            db2.close()
-        except Exception:
-            pass
 
         return {'success': True, 'file_id': file_id, 'text_length': len(text), 'sections': sections,
                 'text_preview': text[:500] if text else ''}
