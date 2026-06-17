@@ -1,7 +1,24 @@
 import os
+import time
+import logging
 from flask import Flask, render_template, jsonify
 from config import Config
 from models import init_db
+
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
+
+def _cleanup_old_files(folder, max_age_seconds=86400):
+    if not os.path.isdir(folder):
+        return
+    now = time.time()
+    for filename in os.listdir(folder):
+        filepath = os.path.join(folder, filename)
+        if os.path.isfile(filepath):
+            try:
+                if now - os.path.getmtime(filepath) > max_age_seconds:
+                    os.remove(filepath)
+            except Exception:
+                pass
 
 def create_app():
     app = Flask(__name__)
@@ -15,6 +32,20 @@ def create_app():
 
     with app.app_context():
         init_db()
+
+    from apscheduler.schedulers.background import BackgroundScheduler
+    scheduler = BackgroundScheduler(daemon=True)
+    scheduler.add_job(
+        func=lambda: [
+            _cleanup_old_files(Config.UPLOAD_FOLDER),
+            _cleanup_old_files('exports'),
+        ],
+        trigger='interval',
+        hours=1,
+        id='file_cleanup',
+        replace_existing=True,
+    )
+    scheduler.start()
 
     from blueprints.main import main_bp
     from blueprints.ai_features import ai_bp

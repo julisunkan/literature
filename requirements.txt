@@ -9,3 +9,4 @@ Pillow>=10.0.0
 python-docx>=0.8.11
 openpyxl>=3.1.2
 markdown>=3.5.0
+APScheduler>=3.10.0
