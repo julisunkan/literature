@@ -352,6 +352,21 @@ def delete_reported_content(report_id):
     db.close()
     return jsonify({'success': True, 'deleted': deleted})
 
+@admin_bp.route('/api/cleanup/run', methods=['POST'])
+def run_cleanup():
+    from app import _run_cleanup
+    try:
+        _run_cleanup()
+        db = get_db()
+        last = db.execute(
+            "SELECT message, details FROM system_logs WHERE source='cleanup' ORDER BY created_at DESC LIMIT 1"
+        ).fetchone()
+        db.close()
+        log_audit('manual_cleanup', 'files', 'uploads+exports')
+        return jsonify({'success': True, 'message': last['message'], 'details': last['details']})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @admin_bp.route('/api/analytics')
 def analytics_data():
     db = get_db()
