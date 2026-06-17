@@ -41,3 +41,9 @@ id = "DRk9qHck0unA2TL4I7FrZ"
 uri = "file://static/icons/master-maskable-512.png"
 type = "image"
 title = "Maskable Icon (512×512)"
+
+[[outputs]]
+id = "CCRxNkxhXDplR_9I2qzay"
+uri = "file://app_description.txt"
+type = "text"
+title = "App Description & Keywords"

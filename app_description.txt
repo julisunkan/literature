@@ -1,0 +1,25 @@
+SHORT DESCRIPTION
+=================
+An AI-powered literature review generator that searches academic databases, manages research papers, and produces structured reviews using large language models.
+
+
+FULL DESCRIPTION
+================
+Literature Review Generator is a web-based Progressive Web App (PWA) designed to streamline the academic research workflow from discovery to synthesis.
+
+Users can search across five major academic databases simultaneously — OpenAlex, Semantic Scholar, Crossref, PubMed, and arXiv — using a single query with optional date range filters. Results can be saved to a personal library with one click, and duplicate detection prevents accidental double-saving of the same paper.
+
+Once papers are collected, the AI engine (powered by Groq, OpenRouter, or Gemini) can generate a fully structured literature review covering Introduction, Thematic Analysis, Research Gaps, Future Directions, and Conclusion. Additional AI tools include abstract summarisation, research question generation, thematic clustering, contradiction detection, and methodology extraction. An AI chat interface allows users to ask freeform questions directly about their saved papers using retrieval-augmented generation.
+
+The app supports PDF, DOCX, and TXT file uploads. Uploaded documents are processed with text extraction (pdfminer, PyPDF2) and OCR fallback (pytesseract), making scanned papers usable as AI context. Users can attach notes and tags to any paper in their library.
+
+Exports are available in Markdown, HTML, DOCX, CSV, Excel, BibTeX, and RIS formats, enabling direct use in reference managers and word processors. A PRISMA flowchart view supports systematic review reporting, and an interactive knowledge graph visualises connections between papers through shared keywords.
+
+The admin panel (at /julisunkan) provides full control over site settings, AI provider API keys, prompt templates, feature toggles, PWA manifest configuration, content moderation, database backups, system logs, and scheduled file cleanup. Upload and export files are automatically deleted after 24 hours to conserve storage.
+
+The app is installable as a PWA on desktop and mobile, includes offline support via a service worker, and is built with Flask, SQLite, Bootstrap 5, and vanilla JavaScript.
+
+
+KEYWORDS
+========
+literature review, AI literature review, academic research tool, research automation, systematic review, paper management, citation generator, BibTeX export, RIS export, OpenAlex, Semantic Scholar, PubMed, arXiv, Crossref, Groq AI, research gap detection, thematic analysis, PDF text extraction, OCR, knowledge graph, PRISMA flowchart, progressive web app, PWA, Flask, SQLite, research assistant, AI writing tool, abstract summariser, bibliography generator, academic database search, research paper organiser
